@@ -1,0 +1,109 @@
+name: Bug report
+description: Something in Lupka does not work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. Lupka behaves differently on each desktop, so the details below matter.
+
+        Security problems do not belong here. Use the **Security** tab instead, see the security policy.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Existing issues
+      options:
+        - label: I searched the existing issues and this has not been reported yet
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Lupka version
+      description: The output of `lupka --version`.
+      placeholder: lupka 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution and version
+      placeholder: Ubuntu 24.04.2, Fedora 44, Arch (rolling)
+    validations:
+      required: true
+  - type: dropdown
+    id: desktop
+    attributes:
+      label: Desktop
+      options:
+        - GNOME
+        - KDE Plasma
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: desktop_version
+    attributes:
+      label: Desktop version
+      description: For example the output of `gnome-shell --version` or `plasmashell --version`. If you chose Other, give the desktop or compositor name as well.
+      placeholder: GNOME Shell 46.0, Plasma 6.1.5, sway 1.9
+    validations:
+      required: true
+  - type: dropdown
+    id: session
+    attributes:
+      label: Session type
+      description: The output of `echo $XDG_SESSION_TYPE`.
+      options:
+        - Wayland
+        - X11
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install Lupka?
+      options:
+        - Release .deb
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include any error message or dialog. Screenshots and short screen recordings help.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected to happen
+      description: If you know how ZoomIt behaves here, say so.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Press Ctrl+1
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Quit Lupka, start it again from a terminal with logging on, reproduce the problem, then paste the output here:
+        `lupka quit; QT_LOGGING_RULES="app.*=true" lupka --background`
+        Stop it with Ctrl+C when you are done. The log names the hotkey and capture backends Lupka chose. Remove anything private first.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Monitor layout and scale factors, other screen tools running, whether it worked in an earlier version.

@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build g++ pkg-config dpkg-dev \
+            qt6-base-dev qt6-wayland \
+            libxcb1-dev libxcb-keysyms1-dev libxcb-xtest0-dev libglib2.0-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            fonts-dejavu-core
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Release build
+        run: |
+          cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-release
+
+      - name: Debian package
+        working-directory: build-release
+        run: cpack -G DEB
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: lupka-deb
+          path: build-release/*.deb
+          if-no-files-found: error
+
+  fedora:
+    runs-on: ubuntu-24.04
+    container: fedora:44
+    timeout-minutes: 30
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf -y install --setopt=install_weak_deps=False \
+            git cmake ninja-build gcc-c++ pkgconf-pkg-config \
+            qt6-qtbase-devel qt6-qtwayland libxcb-devel xcb-util-keysyms-devel \
+            glib2-devel gstreamer1-devel gstreamer1-plugins-base-devel \
+            dejavu-sans-fonts
+
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+  e2e-x11:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        # The second group is what scripts/e2e-x11.sh needs at run time.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build g++ pkg-config dpkg-dev \
+            qt6-base-dev qt6-wayland \
+            libxcb1-dev libxcb-keysyms1-dev libxcb-xtest0-dev libglib2.0-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            xvfb x11-utils xdotool feh imagemagick zenity xclip ffmpeg dbus-daemon \
+            gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-x gstreamer1.0-pipewire \
+            fonts-dejavu-core
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build
+
+      - name: End-to-end tests
+        run: |
+          set -o pipefail
+          export USER="${USER:-$(id -un)}"
+          scripts/e2e-x11.sh build/lupka 2>&1 | tee e2e.log
+
+      - name: Collect artifacts
+        if: failure()
+        # The script prints "artifacts: DIR". Copy only regular files: the
+        # directory can also hold sockets, which cannot be uploaded.
+        run: |
+          dir=$(sed -n 's/^artifacts: //p' e2e.log | tail -n 1)
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            mkdir -p e2e-artifacts
+            (cd "$dir" && find . -type f -exec cp --parents -t "$GITHUB_WORKSPACE/e2e-artifacts" {} +)
+          fi
+
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-x11
+          path: |
+            e2e.log
+            e2e-artifacts
+          retention-days: 7

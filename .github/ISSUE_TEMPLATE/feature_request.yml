@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a change or an addition
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Lupka follows ZoomIt, so a feature that ZoomIt already has is an easier request than a new idea. For open-ended questions, use Discussions instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what gets in the way? Describe the situation before the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Your proposal
+      description: What should Lupka do? Include hotkeys, settings or other details if you have thought about them.
+    validations:
+      required: true
+  - type: dropdown
+    id: zoomit
+    attributes:
+      label: Does ZoomIt have this feature?
+      description: If it does, say which version or link to its documentation in the proposal above.
+      options:
+        - Yes, and it works the way I describe
+        - Yes, but it works differently
+        - No
+        - I am not sure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Other tools, workarounds, or different designs for the same thing.

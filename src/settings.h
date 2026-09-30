@@ -84,6 +84,14 @@ public:
     QString recordToken() const;  // ScreenCast restore token for recordings
     void setRecordToken(const QString &token);
 
+    // DemoType
+    QString demoTypeFile() const;
+    void setDemoTypeFile(const QString &file);
+    int demoTypeSpeed() const;  // 10 (slow) .. 100 (fast)
+    void setDemoTypeSpeed(int speed);
+    QString demoTypeToken() const;  // RemoteDesktop portal restore token
+    void setDemoTypeToken(const QString &token);
+
     // Screen capture: the ScreenCast portal's restore token
     QString screenCastToken() const;
     void setScreenCastToken(const QString &token);

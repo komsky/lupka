@@ -50,6 +50,7 @@ SettingsDialog::SettingsDialog(App *app)
     tabs->addTab(buildSnipTab(), tr("Snip"));
     tabs->addTab(buildBreakTab(), tr("Break"));
     tabs->addTab(buildRecordTab(), tr("Record"));
+    tabs->addTab(buildDemoTypeTab(), tr("DemoType"));
     tabs->addTab(buildGeneralTab(), tr("General"));
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close);
@@ -402,6 +403,49 @@ QWidget *SettingsDialog::buildRecordTab()
                          "desktop asks which one, once). With Shift you pick a region first; with Alt it "
                          "records one window. Zooming and drawing show up in the recording. Files are MP4 "
                          "(H.264), or WebM when no H.264 encoder is installed.")));
+    return page;
+}
+
+QWidget *SettingsDialog::buildDemoTypeTab()
+{
+    Settings *s = m_app->settings();
+    auto *page = new QWidget;
+    auto *form = new QFormLayout(page);
+
+    auto *file = new QLineEdit(s->demoTypeFile());
+    connect(file, &QLineEdit::editingFinished, s, [s, file] { s->setDemoTypeFile(file->text()); });
+    auto *browse = new QPushButton(tr("Browse…"));
+    connect(browse, &QPushButton::clicked, this, [this, s, file] {
+        const QString chosen = QFileDialog::getOpenFileName(this, tr("DemoType script"), s->demoTypeFile(),
+                                                            tr("Text files (*.txt *.md);;All files (*)"));
+        if (!chosen.isEmpty()) {
+            file->setText(chosen);
+            s->setDemoTypeFile(chosen);
+        }
+    });
+    auto *row = new QHBoxLayout;
+    row->addWidget(file);
+    row->addWidget(browse);
+    form->addRow(tr("Script file"), row);
+
+    auto *speed = new QSlider(Qt::Horizontal);
+    speed->setRange(10, 100);
+    speed->setValue(s->demoTypeSpeed());
+    connect(speed, &QSlider::valueChanged, s, &Settings::setDemoTypeSpeed);
+    auto *speedRow = new QHBoxLayout;
+    speedRow->addWidget(new QLabel(tr("Slow")));
+    speedRow->addWidget(speed);
+    speedRow->addWidget(new QLabel(tr("Fast")));
+    form->addRow(tr("Typing speed"), speedRow);
+
+    form->addRow(note(tr("Each press of the DemoType hotkey types the next snippet into the focused window. "
+                         "Separate snippets with <tt>[end]</tt>. Also: <tt>[pause:n]</tt> waits n seconds, "
+                         "<tt>[enter]</tt> <tt>[up]</tt> <tt>[down]</tt> <tt>[left]</tt> <tt>[right]</tt> press "
+                         "keys, and <tt>[paste]</tt>…<tt>[/paste]</tt> pastes a block at once. Text on the "
+                         "clipboard that starts with <tt>[start]</tt> is used instead of the file. With Shift, "
+                         "the hotkey steps back one snippet; Esc stops typing.<br>Under Wayland the desktop asks "
+                         "once whether %1 may type for you.")
+                          .arg(QStringLiteral(APP_NAME))));
     return page;
 }
 

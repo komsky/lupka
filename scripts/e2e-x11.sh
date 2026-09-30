@@ -91,7 +91,12 @@ directory=$WORK/videos
 [snip]
 saveDirectory=$WORK/pictures
 lastSaveDirectory=$WORK/pictures
+
+[demoType]
+file=$WORK/demo.txt
+speed=100
 INI
+printf 'Hello, World!\n[end]\nsecond snippet[end]' >"$WORK/demo.txt"
 
 "$bin" --background >"$WORK/app.log" 2>&1 &
 app=$!
@@ -306,6 +311,25 @@ if [[ -n "$region" && "$region" != "$video" ]]; then
 else
     bad "no region recording"
 fi
+
+# --- DemoType (Ctrl+7) ---------------------------------------------------------
+zenity --entry --title demo --text demo >"$WORK/typed1.txt" 2>/dev/null &
+sleep 2
+xdotool search --name demo windowactivate --sync 2>/dev/null
+xdotool mousemove 960 540
+xdotool key ctrl+7
+sleep 3
+xdotool key Return
+sleep 1
+[[ "$(cat "$WORK/typed1.txt")" == "Hello, World!" ]] && ok "Ctrl+7 types the first snippet" || bad "typed: '$(cat "$WORK/typed1.txt")'"
+zenity --entry --title demo --text demo >"$WORK/typed2.txt" 2>/dev/null &
+sleep 2
+xdotool search --name demo windowactivate --sync 2>/dev/null
+xdotool key ctrl+7
+sleep 3
+xdotool key Return
+sleep 1
+[[ "$(cat "$WORK/typed2.txt")" == "second snippet" ]] && ok "the next press types the next snippet" || bad "typed: '$(cat "$WORK/typed2.txt")'"
 
 "$bin" quit
 sleep 1

@@ -15,8 +15,8 @@ Tray::Tray(App *app)
     m_menu = new QMenu;
     const QList<Action> entries = {Action::Zoom,     Action::Draw,         Action::LiveDraw,
                                    Action::Snip,     Action::SnipSave,     Action::Record,
-                                   Action::RecordRegion, Action::RecordWindow, Action::Break,
-                                   Action::LiveZoom};
+                                   Action::RecordRegion, Action::RecordWindow, Action::DemoType,
+                                   Action::Break,    Action::LiveZoom};
     for (Action action : entries) {
         QAction *item = m_menu->addAction(actionInfo(action).label);
         connect(item, &QAction::triggered, app, [app, action] { app->trigger(action); });

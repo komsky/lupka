@@ -1,6 +1,6 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
-foreach(name zoommath keynames annotations settings capture breaktimer)
+foreach(name zoommath keynames annotations settings capture breaktimer demoscript)
     add_executable(test_${name} test_${name}.cpp)
     target_link_libraries(test_${name} PRIVATE appcore Qt6::Test)
     add_test(NAME ${name} COMMAND test_${name})

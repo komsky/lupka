@@ -12,6 +12,7 @@
 #include <optional>
 
 class BreakTimer;
+class DemoType;
 class Recorder;
 class Hotkeys;
 class LiveZoom;
@@ -70,6 +71,8 @@ private:
     Tray *m_tray = nullptr;
     BreakTimer *m_break = nullptr;
     Recorder *m_recorder = nullptr;
+    DemoType *m_demoType = nullptr;
+    void updateTemporaryHotkeys();
     QPointer<Session> m_session;
     QPointer<SettingsDialog> m_dialog;
     std::optional<Session::Kind> m_pending;

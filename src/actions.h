@@ -18,9 +18,12 @@ enum class Action {
     RecordWindow,
     Snip,
     SnipSave,
-    // Used while LiveZoom is active; bound temporarily, never shown in settings.
+    DemoType,
+    DemoTypeBack,
+    // Bound only for a while (live zoom, typing); never shown in settings.
     LiveZoomIn,
     LiveZoomOut,
+    DemoTypeStop,
     // Command line / tray only.
     Settings,
     Quit,

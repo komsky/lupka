@@ -154,6 +154,13 @@ void Settings::setRecordFrameRate(int fps) { put(QStringLiteral("record/frameRat
 QString Settings::recordToken() const { return get(QStringLiteral("record/screenCastToken"), QString()).toString(); }
 void Settings::setRecordToken(const QString &token) { put(QStringLiteral("record/screenCastToken"), token); }
 
+QString Settings::demoTypeFile() const { return get(QStringLiteral("demoType/file"), QString()).toString(); }
+void Settings::setDemoTypeFile(const QString &file) { put(QStringLiteral("demoType/file"), file); }
+int Settings::demoTypeSpeed() const { return qBound(10, get(QStringLiteral("demoType/speed"), 55).toInt(), 100); }
+void Settings::setDemoTypeSpeed(int speed) { put(QStringLiteral("demoType/speed"), speed); }
+QString Settings::demoTypeToken() const { return get(QStringLiteral("demoType/token"), QString()).toString(); }
+void Settings::setDemoTypeToken(const QString &token) { put(QStringLiteral("demoType/token"), token); }
+
 QString Settings::screenCastToken() const { return get(QStringLiteral("capture/screenCastToken"), QString()).toString(); }
 void Settings::setScreenCastToken(const QString &token) { put(QStringLiteral("capture/screenCastToken"), token); }
 

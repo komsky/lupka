@@ -22,6 +22,7 @@ private:
     QWidget *buildSnipTab();
     QWidget *buildBreakTab();
     QWidget *buildRecordTab();
+    QWidget *buildDemoTypeTab();
     QWidget *buildGeneralTab();
     void loadShortcuts();
     void saveShortcut(Action action);

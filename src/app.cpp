@@ -3,6 +3,7 @@
 #include "breaktimer.h"
 #include "config.h"
 #include "dbusservice.h"
+#include "demotype/demotype.h"
 #include "hotkeys/hotkeys.h"
 #include "imageoutput.h"
 #include "livezoom.h"
@@ -94,15 +95,13 @@ bool App::start(const QString &initialAction)
 
     m_liveZoom = new LiveZoom(m_settings, this);
     connect(m_liveZoom, &LiveZoom::activeChanged, this, [this](bool active) {
-        // While live zoom is on, Ctrl+Up/Down change its magnification.
-        Bindings temporary;
-        if (active) {
-            temporary.insert(Action::LiveZoomIn, actionInfo(Action::LiveZoomIn).defaults);
-            temporary.insert(Action::LiveZoomOut, actionInfo(Action::LiveZoomOut).defaults);
-        }
-        m_hotkeys->setTemporary(temporary);
+        updateTemporaryHotkeys();
         Q_EMIT liveZoomChanged(active);
     });
+
+    m_demoType = new DemoType(m_settings, this);
+    connect(m_demoType, &DemoType::typingChanged, this, &App::updateTemporaryHotkeys);
+    connect(m_demoType, &DemoType::failed, this, [](const QString &reason) { notify::show(tr("DemoType"), reason); });
 
     // GStreamer scans its plugins on first use, which can take a second or
     // two; do it now rather than when the user presses the record key.
@@ -165,6 +164,20 @@ bool App::liveZoomSupported() const
 bool App::liveZoomActive() const
 {
     return m_liveZoom && m_liveZoom->isActive();
+}
+
+void App::updateTemporaryHotkeys()
+{
+    // While live zoom is on, Ctrl+Up/Down change its magnification; while
+    // DemoType types, Escape stops it.
+    Bindings temporary;
+    if (m_liveZoom->isActive()) {
+        temporary.insert(Action::LiveZoomIn, actionInfo(Action::LiveZoomIn).defaults);
+        temporary.insert(Action::LiveZoomOut, actionInfo(Action::LiveZoomOut).defaults);
+    }
+    if (m_demoType->isTyping())
+        temporary.insert(Action::DemoTypeStop, actionInfo(Action::DemoTypeStop).defaults);
+    m_hotkeys->setTemporary(temporary);
 }
 
 bool App::isRecording() const
@@ -264,6 +277,17 @@ void App::trigger(Action action)
             return;
         }
         m_liveZoom->toggle();
+        return;
+    case Action::DemoType:
+        if (!debounce(action) && !m_session)
+            m_demoType->typeNext();
+        return;
+    case Action::DemoTypeBack:
+        if (!debounce(action))
+            m_demoType->stepBack();
+        return;
+    case Action::DemoTypeStop:
+        m_demoType->stop();
         return;
     case Action::LiveZoomIn:
         m_liveZoom->zoomIn();

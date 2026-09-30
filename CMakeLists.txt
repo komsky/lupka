@@ -22,7 +22,7 @@ include(GNUInstallDirs)
 
 find_package(Qt6 6.2 REQUIRED COMPONENTS Core Gui Widgets DBus Concurrent)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms)
+pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms xcb-xtest)
 pkg_check_modules(GIO REQUIRED IMPORTED_TARGET gio-2.0)
 pkg_check_modules(GST REQUIRED IMPORTED_TARGET gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
 
@@ -35,6 +35,9 @@ add_library(appcore STATIC
     src/app.cpp
     src/breaktimer.cpp
     src/dbusservice.cpp
+    src/demotype/demotype.cpp
+    src/demotype/script.cpp
+    src/demotype/typist.cpp
     src/imageoutput.cpp
     src/livezoom.cpp
     src/notify.cpp
@@ -103,13 +106,17 @@ set(CPACK_PACKAGE_CONTACT "Komsky <komsky@gmail.com>")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${APP_SUMMARY})
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_STRIP_FILES ON)
 set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "qt6-wayland, libqt6svg6, gstreamer1.0-pipewire, gstreamer1.0-plugins-good")
-set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "wl-clipboard, xdg-desktop-portal")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "qt6-wayland, gstreamer1.0-pipewire, gstreamer1.0-plugins-good")
+set(CPACK_DEBIAN_PACKAGE_SUGGESTS "tesseract-ocr")
+# x264 for MP4 recordings, ximagesrc for recording under X11, AAC for sound.
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS
+    "gstreamer1.0-plugins-ugly, gstreamer1.0-x, gstreamer1.0-libav, xdg-desktop-portal, wl-clipboard")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION
-"${APP_SUMMARY}
- Press a hotkey to zoom into the screen and pan with the mouse, click to
- freeze and draw arrows, boxes and text, snip a region to the clipboard, or
- start a break timer. Works on GNOME and KDE Plasma, on Wayland and X11.")
+"Press a hotkey to zoom into the screen and pan with the mouse, click to
+freeze and draw arrows, boxes and text, snip a region to the clipboard,
+record the screen, or start a break timer. Works on GNOME and KDE Plasma,
+under Wayland and X11.")
 include(CPack)

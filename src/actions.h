@@ -13,6 +13,9 @@ enum class Action {
     Break,
     LiveZoom,
     LiveDraw,
+    Record,
+    RecordRegion,
+    RecordWindow,
     Snip,
     SnipSave,
     // Used while LiveZoom is active; bound temporarily, never shown in settings.

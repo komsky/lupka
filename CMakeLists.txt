@@ -39,6 +39,7 @@ add_library(appcore STATIC
     src/livezoom.cpp
     src/notify.cpp
     src/platform.cpp
+    src/recorder.cpp
     src/settings.cpp
     src/x11util.cpp
     src/capture/backends.h

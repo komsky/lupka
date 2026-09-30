@@ -82,6 +82,17 @@ fi
 shot baseline
 expect_similar "baseline shows the test pattern" "$WORK/baseline.png" "$pattern" 0.02
 
+# Keep saved files inside the test directory.
+mkdir -p "$XDG_CONFIG_HOME/lupka" "$WORK/videos" "$WORK/pictures"
+cat >"$XDG_CONFIG_HOME/lupka/lupka.ini" <<INI
+[record]
+directory=$WORK/videos
+
+[snip]
+saveDirectory=$WORK/pictures
+lastSaveDirectory=$WORK/pictures
+INI
+
 "$bin" --background >"$WORK/app.log" 2>&1 &
 app=$!
 sleep 2
@@ -263,6 +274,38 @@ xdotool key Escape
 sleep 0.5
 shot break-closed
 expect_similar "Esc closes the break timer" "$WORK/break-closed.png" "$pattern" 0.02
+
+# --- Recording (Ctrl+5, Ctrl+Shift+5) ---------------------------------------------
+media_info() {  # file -> "duration width height"
+    ffprobe -v error -select_streams v:0 -show_entries format=duration:stream=width,height -of csv=p=0 "$1" |
+        tr '\n' ',' | awk -F, '{ print $3, $1, $2 }'
+}
+xdotool key ctrl+5
+sleep 3
+xdotool key ctrl+5
+sleep 3
+video=$(ls "$WORK"/videos/*.mp4 "$WORK"/videos/*.webm 2>/dev/null | head -1)
+if [[ -n "$video" ]]; then
+    read -r duration width height <<<"$(media_info "$video")"
+    awk -v d="$duration" 'BEGIN { exit !(d > 2.3 && d < 6) }' && ok "Ctrl+5 records ${duration}s" || bad "recording lasted '$duration'"
+    [[ "$width" == 1920 && "$height" == 1080 ]] && ok "recording is 1920x1080" || bad "recording is ${width}x${height}"
+else
+    bad "no recording in $WORK/videos"
+fi
+
+xdotool key ctrl+shift+5
+sleep 1
+xdotool mousemove 100 100 mousedown 1 mousemove 300 250 mousemove 500 400 mouseup 1
+sleep 3
+xdotool key ctrl+5
+sleep 3
+region=$(ls -t "$WORK"/videos/*.mp4 "$WORK"/videos/*.webm 2>/dev/null | head -1)
+if [[ -n "$region" && "$region" != "$video" ]]; then
+    read -r duration width height <<<"$(media_info "$region")"
+    [[ "$width" == 400 && "$height" == 300 ]] && ok "Ctrl+Shift+5 records the 400x300 region (${duration}s)" || bad "region recording is ${width}x${height}"
+else
+    bad "no region recording"
+fi
 
 "$bin" quit
 sleep 1

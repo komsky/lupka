@@ -139,6 +139,21 @@ void Settings::setBreakImageFile(const QString &file) { put(QStringLiteral("brea
 bool Settings::breakScaleImage() const { return get(QStringLiteral("break/scaleImage"), true).toBool(); }
 void Settings::setBreakScaleImage(bool on) { put(QStringLiteral("break/scaleImage"), on); }
 
+QString Settings::recordDirectory() const
+{
+    QString videos = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    if (videos.isEmpty())
+        videos = QDir::homePath();
+    return get(QStringLiteral("record/directory"), videos).toString();
+}
+void Settings::setRecordDirectory(const QString &dir) { put(QStringLiteral("record/directory"), dir); }
+bool Settings::recordAudio() const { return get(QStringLiteral("record/audio"), true).toBool(); }
+void Settings::setRecordAudio(bool on) { put(QStringLiteral("record/audio"), on); }
+int Settings::recordFrameRate() const { return qBound(5, get(QStringLiteral("record/frameRate"), 30).toInt(), 60); }
+void Settings::setRecordFrameRate(int fps) { put(QStringLiteral("record/frameRate"), fps); }
+QString Settings::recordToken() const { return get(QStringLiteral("record/screenCastToken"), QString()).toString(); }
+void Settings::setRecordToken(const QString &token) { put(QStringLiteral("record/screenCastToken"), token); }
+
 QString Settings::screenCastToken() const { return get(QStringLiteral("capture/screenCastToken"), QString()).toString(); }
 void Settings::setScreenCastToken(const QString &token) { put(QStringLiteral("capture/screenCastToken"), token); }
 

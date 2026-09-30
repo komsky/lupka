@@ -37,6 +37,7 @@ Q_SIGNALS:
     void hotkeyPressed(Action action);
     void copyRequested(const QImage &image, bool snip);
     void saved(const QString &path);
+    void regionSelected(QScreen *screen, const QRect &region);
 
 private:
     void activate(OverlayWindow *window, const QPointF &pos);

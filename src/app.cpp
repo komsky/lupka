@@ -8,6 +8,7 @@
 #include "livezoom.h"
 #include "notify.h"
 #include "platform.h"
+#include "recorder.h"
 #include "settings.h"
 #include "ui/settingsdialog.h"
 #include "ui/tray.h"
@@ -20,10 +21,13 @@
 #include <QDir>
 #include <QFile>
 #include <QLoggingCategory>
+#include <QProcess>
 #include <QSaveFile>
 #include <QScreen>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QTimer>
+#include <QtConcurrent>
 
 Q_LOGGING_CATEGORY(lcApp, "app.main")
 
@@ -100,6 +104,21 @@ bool App::start(const QString &initialAction)
         Q_EMIT liveZoomChanged(active);
     });
 
+    // GStreamer scans its plugins on first use, which can take a second or
+    // two; do it now rather than when the user presses the record key.
+    (void)QtConcurrent::run([] { Recorder::isAvailable(); });
+
+    m_recorder = new Recorder(m_settings, this);
+    connect(m_recorder, &Recorder::started, this, [this] { Q_EMIT recordingChanged(true); });
+    connect(m_recorder, &Recorder::finished, this, [this](const QString &path) {
+        Q_EMIT recordingChanged(false);
+        notify::show(tr("Recording saved"), path);
+    });
+    connect(m_recorder, &Recorder::failed, this, [this](const QString &reason) {
+        Q_EMIT recordingChanged(false);
+        notify::show(tr("Recording failed"), reason);
+    });
+
     m_hotkeys = new Hotkeys(m_settings, this);
     connect(m_hotkeys, &Hotkeys::activated, this, qOverload<Action>(&App::trigger));
     m_hotkeys->apply();
@@ -146,6 +165,11 @@ bool App::liveZoomSupported() const
 bool App::liveZoomActive() const
 {
     return m_liveZoom && m_liveZoom->isActive();
+}
+
+bool App::isRecording() const
+{
+    return m_recorder && m_recorder->isRecording();
 }
 
 void App::triggerById(const QString &id)
@@ -211,6 +235,26 @@ void App::trigger(Action action)
         if (!debounce(action))
             toggleBreak();
         return;
+    case Action::Record:
+    case Action::RecordRegion:
+    case Action::RecordWindow: {
+        if (debounce(action))
+            return;
+        // Any record hotkey stops a running recording, as in ZoomIt.
+        if (m_recorder->isRecording()) {
+            m_recorder->stop();
+            return;
+        }
+        if (action == Action::RecordRegion) {
+            if (!m_session)
+                beginCapture(Session::Kind::RecordRegion);
+            return;
+        }
+        QScreen *screen = platform::isX11() ? QGuiApplication::screenAt(QCursor::pos()) : nullptr;
+        m_recorder->start(action == Action::RecordWindow ? Recorder::Mode::Window : Recorder::Mode::Screen,
+                          screen ? screen : QGuiApplication::primaryScreen());
+        return;
+    }
     case Action::LiveZoom:
         if (debounce(action))
             return;
@@ -269,6 +313,19 @@ void App::onCaptured(const ScreenImages &images)
     connect(m_session, &Session::copyRequested, this, &App::onCopyRequested);
     connect(m_session, &Session::saved, this, [](const QString &path) {
         notify::show(tr("Picture saved"), path, path);
+    });
+    connect(m_session, &Session::regionSelected, this, [this](QScreen *screen, const QRect &region) {
+        m_recordScreen = screen;
+        m_recordRegion = region;
+    });
+    connect(m_session, &Session::finished, this, [this] {
+        if (m_recordRegion.isEmpty())
+            return;
+        // Start once the overlay is gone, so its dimming is not recorded.
+        const QRect region = std::exchange(m_recordRegion, QRect());
+        QTimer::singleShot(250, this, [this, region] {
+            m_recorder->start(Recorder::Mode::Region, m_recordScreen, region);
+        });
     });
     m_session->start();
 }
@@ -403,8 +460,16 @@ void App::ensureDesktopEntry()
                                     .arg(QStringLiteral(APP_NAME), QStringLiteral(APP_SUMMARY), quotedExec(),
                                          QStringLiteral(APP_ID))
                                     .toUtf8();
-    if (writeFile(userPath, contents))
-        qCInfo(lcApp) << "wrote" << userPath << "so KWin allows screenshots";
+    if (!writeFile(userPath, contents))
+        return;
+    qCInfo(lcApp) << "wrote" << userPath << "so KWin allows screenshots";
+    // KWin finds applications through the KService cache; refresh it now.
+    for (const QString &tool : {QStringLiteral("kbuildsycoca6"), QStringLiteral("kbuildsycoca5")}) {
+        if (platform::hasProgram(tool)) {
+            QProcess::execute(tool, {});
+            break;
+        }
+    }
 }
 
 void App::showWelcome()
@@ -427,6 +492,8 @@ void App::quit()
         m_session->leave();
     if (m_liveZoom->isActive())
         m_liveZoom->toggle();
+    if (m_recorder->isRecording())
+        m_recorder->stop();
     // An explicit quit hands the keys back to other applications.
     m_hotkeys->unregisterAll();
     QCoreApplication::quit();

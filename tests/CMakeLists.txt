@@ -6,3 +6,7 @@ foreach(name zoommath keynames annotations settings capture breaktimer)
     add_test(NAME ${name} COMMAND test_${name})
     set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
+
+# Helper for the KDE end-to-end test.
+add_executable(kwinshot tools/kwinshot.cpp)
+target_link_libraries(kwinshot PRIVATE Qt6::Gui Qt6::DBus)

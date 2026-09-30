@@ -20,6 +20,7 @@ Session::Session(Kind kind, const ScreenImages &images, Settings *settings, QObj
         // the overlay still has focus, i.e. before it closes.
         connect(window, &OverlayWindow::copyRequested, this, &Session::copyRequested);
         connect(window, &OverlayWindow::saved, this, &Session::saved);
+        connect(window, &OverlayWindow::regionSelected, this, &Session::regionSelected);
         connect(window, &OverlayWindow::pointerSeen, this, &Session::activate);
     }
 
@@ -53,7 +54,7 @@ Session::~Session()
 
 Session::Response Session::respondTo(Action action) const
 {
-    const bool snipping = m_kind == Kind::Snip || m_kind == Kind::SnipSave;
+    const bool snipping = m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion;
     switch (action) {
     case Action::Zoom:
         // Ctrl+1 ends zoom and draw alike, as in ZoomIt.
@@ -85,8 +86,8 @@ void Session::start()
         return;
     }
 
-    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave) {
-        // Snip on whichever monitor the user drags on; every overlay is live.
+    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion) {
+        // Pick on whichever monitor the user drags on; every overlay is live.
         for (const auto &window : std::as_const(m_windows)) {
             window->showOnScreen();
             window->begin(QPointF());
@@ -117,7 +118,7 @@ void Session::activate(OverlayWindow *window, const QPointF &pos)
 {
     if (m_finished)
         return;
-    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave) {
+    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion) {
         // All snip overlays stay; keys typed anywhere go to the one in use.
         m_active = window;
         for (const auto &other : std::as_const(m_windows)) {
@@ -144,7 +145,7 @@ void Session::activate(OverlayWindow *window, const QPointF &pos)
 
 void Session::leave()
 {
-    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || !m_active) {
+    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion || !m_active) {
         finish();
         return;
     }

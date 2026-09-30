@@ -7,5 +7,8 @@ RUN dnf -y install --setopt=install_weak_deps=False \
         kwin-wayland kglobalacceld xdg-desktop-portal xdg-desktop-portal-kde plasma-workspace-libs \
         pipewire wireplumber \
         xorg-x11-server-Xvfb xdpyinfo xdotool ImageMagick dbus-daemon dbus-tools wl-clipboard \
-        mesa-dri-drivers mesa-libEGL mesa-libgbm dejavu-sans-fonts procps-ng which \
+        mesa-dri-drivers mesa-libEGL mesa-libgbm dejavu-sans-fonts procps-ng which imv feh \
     && dnf clean all
+# kwin_wayland carries file capabilities (CAP_SYS_NICE), which a rootless
+# container cannot grant; a plain copy runs without them.
+RUN cp --no-preserve=all /usr/bin/kwin_wayland /usr/local/bin/kwin_wayland && chmod 755 /usr/local/bin/kwin_wayland

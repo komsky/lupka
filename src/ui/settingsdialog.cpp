@@ -49,6 +49,7 @@ SettingsDialog::SettingsDialog(App *app)
     tabs->addTab(buildDrawTab(), tr("Draw"));
     tabs->addTab(buildSnipTab(), tr("Snip"));
     tabs->addTab(buildBreakTab(), tr("Break"));
+    tabs->addTab(buildRecordTab(), tr("Record"));
     tabs->addTab(buildGeneralTab(), tr("General"));
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close);
@@ -361,6 +362,46 @@ QWidget *SettingsDialog::buildBreakTab()
     form->addRow(note(tr("↑/↓ or wheel: ±1 minute &nbsp;·&nbsp; ←/→: ±10 seconds &nbsp;·&nbsp; "
                          "R G B O Y P W K: text colour &nbsp;·&nbsp; Esc or right-click: close. "
                          "Switch away with Alt+Tab; the break hotkey brings the timer back.")));
+    return page;
+}
+
+QWidget *SettingsDialog::buildRecordTab()
+{
+    Settings *s = m_app->settings();
+    auto *page = new QWidget;
+    auto *form = new QFormLayout(page);
+
+    auto *dir = new QLineEdit(s->recordDirectory());
+    connect(dir, &QLineEdit::editingFinished, s, [s, dir] { s->setRecordDirectory(dir->text()); });
+    auto *browse = new QPushButton(tr("Browse…"));
+    connect(browse, &QPushButton::clicked, this, [this, s, dir] {
+        const QString chosen = QFileDialog::getExistingDirectory(this, tr("Save recordings to"), s->recordDirectory());
+        if (!chosen.isEmpty()) {
+            dir->setText(chosen);
+            s->setRecordDirectory(chosen);
+        }
+    });
+    auto *row = new QHBoxLayout;
+    row->addWidget(dir);
+    row->addWidget(browse);
+    form->addRow(tr("Save folder"), row);
+
+    auto *audio = new QCheckBox(tr("Record system sound"));
+    audio->setChecked(s->recordAudio());
+    connect(audio, &QCheckBox::toggled, s, &Settings::setRecordAudio);
+    form->addRow(QString(), audio);
+
+    auto *fps = new QSpinBox;
+    fps->setRange(5, 60);
+    fps->setSuffix(tr(" fps"));
+    fps->setValue(s->recordFrameRate());
+    connect(fps, &QSpinBox::valueChanged, s, &Settings::setRecordFrameRate);
+    form->addRow(tr("Frame rate"), fps);
+
+    form->addRow(note(tr("The record hotkey starts and stops a recording of the monitor (under Wayland the "
+                         "desktop asks which one, once). With Shift you pick a region first; with Alt it "
+                         "records one window. Zooming and drawing show up in the recording. Files are MP4 "
+                         "(H.264), or WebM when no H.264 encoder is installed.")));
     return page;
 }
 

@@ -74,6 +74,16 @@ public:
     bool breakScaleImage() const;
     void setBreakScaleImage(bool on);
 
+    // Recording
+    QString recordDirectory() const;
+    void setRecordDirectory(const QString &dir);
+    bool recordAudio() const;  // system sound, from the default output's monitor
+    void setRecordAudio(bool on);
+    int recordFrameRate() const;
+    void setRecordFrameRate(int fps);
+    QString recordToken() const;  // ScreenCast restore token for recordings
+    void setRecordToken(const QString &token);
+
     // Screen capture: the ScreenCast portal's restore token
     QString screenCastToken() const;
     void setScreenCastToken(const QString &token);

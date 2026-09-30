@@ -20,8 +20,8 @@ class OverlayWindow : public QWidget
 {
     Q_OBJECT
 public:
-    enum class Kind { Zoom, Draw, Snip, SnipSave, LiveDraw };
-    enum class CropPurpose { Copy, Save };
+    enum class Kind { Zoom, Draw, Snip, SnipSave, LiveDraw, RecordRegion };
+    enum class CropPurpose { Copy, Save, Record };
 
     OverlayWindow(QScreen *screen, const QImage &shot, Settings *settings, Kind kind);
     ~OverlayWindow() override;
@@ -49,6 +49,8 @@ Q_SIGNALS:
     // `snip` is true for a region picked by a snip hotkey (worth a notification).
     void copyRequested(const QImage &image, bool snip);
     void saved(const QString &path);
+    // A region to record, in global logical coordinates.
+    void regionSelected(QScreen *screen, const QRect &region);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

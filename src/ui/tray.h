@@ -25,4 +25,5 @@ private:
     QSystemTrayIcon *m_icon = nullptr;
     QMenu *m_menu = nullptr;
     QHash<int, QAction *> m_actions;
+    bool m_showingRecording = false;
 };

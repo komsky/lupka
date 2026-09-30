@@ -12,6 +12,7 @@
 #include <optional>
 
 class BreakTimer;
+class Recorder;
 class Hotkeys;
 class LiveZoom;
 class Settings;
@@ -37,6 +38,7 @@ public:
     QString captureBackend() const;
     bool liveZoomSupported() const;
     bool liveZoomActive() const;
+    bool isRecording() const;
 
 public Q_SLOTS:
     void trigger(Action action);
@@ -47,6 +49,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void liveZoomChanged(bool active);
+    void recordingChanged(bool recording);
 
 private:
     void beginCapture(std::optional<Session::Kind> kind);
@@ -66,10 +69,13 @@ private:
     LiveZoom *m_liveZoom = nullptr;
     Tray *m_tray = nullptr;
     BreakTimer *m_break = nullptr;
+    Recorder *m_recorder = nullptr;
     QPointer<Session> m_session;
     QPointer<SettingsDialog> m_dialog;
     std::optional<Session::Kind> m_pending;
     QPointer<QScreen> m_pendingBreakScreen;
+    QPointer<QScreen> m_recordScreen;
+    QRect m_recordRegion;
     QHash<int, QElapsedTimer> m_lastTrigger;
     bool m_quitting = false;
 };

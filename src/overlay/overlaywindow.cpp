@@ -178,6 +178,9 @@ void OverlayWindow::begin(const QPointF &cursor)
     case Kind::SnipSave:
         startCrop(CropPurpose::Save, true);
         break;
+    case Kind::RecordRegion:
+        startCrop(CropPurpose::Record, true);
+        break;
     }
     update();
 }
@@ -468,7 +471,8 @@ void OverlayWindow::startCrop(CropPurpose purpose, bool exitAfter)
     m_cropPurpose = purpose;
     m_exitAfterCrop = exitAfter;
     updateCursor();
-    showHint(tr("Drag to select  ·  Enter: everything  ·  Esc: cancel"));
+    showHint(purpose == CropPurpose::Record ? tr("Drag over the area to record  ·  Enter: whole screen  ·  Esc: cancel")
+                                            : tr("Drag to select  ·  Enter: everything  ·  Esc: cancel"));
 }
 
 void OverlayWindow::cancelCrop()
@@ -488,10 +492,15 @@ void OverlayWindow::finishCrop(const QRectF &area)
     m_cropping = false;
     m_selecting = false;
     update();
-    if (m_cropPurpose == CropPurpose::Copy)
+    if (m_cropPurpose == CropPurpose::Copy) {
         copyArea(area, m_exitAfterCrop);
-    else
+    } else if (m_cropPurpose == CropPurpose::Save) {
         saveArea(area);
+    } else {
+        const QRectF source(toSource(area.topLeft()), toSource(area.bottomRight()));
+        const QPoint origin = m_screen ? m_screen->geometry().topLeft() : QPoint();
+        Q_EMIT regionSelected(m_screen, source.toAlignedRect().translated(origin));
+    }
     if (m_exitAfterCrop) {
         leave();
         return;

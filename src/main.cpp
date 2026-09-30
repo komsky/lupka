@@ -44,7 +44,7 @@ void printUsage()
         "\n"
         "Options:\n"
         "  --background             start without showing anything (used at login)\n"
-        "  --unregister-shortcuts   remove the desktop shortcuts %s created, then exit\n"
+        "  --unregister-shortcuts   remove the shortcuts and login entry %s created, then exit\n"
         "  --version                print the version\n"
         "  --help                   print this help\n",
         APP_BIN, APP_NAME, APP_NAME);
@@ -136,6 +136,8 @@ int main(int argc, char *argv[])
         Hotkeys hotkeys(&settings);
         hotkeys.unregisterAll();
         std::printf("Removed %s shortcuts registered through %s.\n", APP_NAME, qPrintable(hotkeys.backendName()));
+        for (const QString &path : App::removeUserEntries())
+            std::printf("Removed %s\n", qPrintable(path));
         return 0;
     }
 

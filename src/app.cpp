@@ -44,6 +44,16 @@ QString autostartPath()
            + QStringLiteral(APP_ID) + QStringLiteral(".desktop");
 }
 
+QString userDesktopEntryPath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation) + QStringLiteral("/")
+           + QStringLiteral(APP_ID) + QStringLiteral(".desktop");
+}
+
+// Marks the desktop entry ensureDesktopEntry() writes, so that only that file
+// is ever removed.
+constexpr char kGeneratedMarker[] = "X-Lupka-Generated=true";
+
 QString quotedExec()
 {
     QString path = QCoreApplication::applicationFilePath();
@@ -454,6 +464,20 @@ void App::updateAutostart()
         qCWarning(lcApp) << "could not write" << path;
 }
 
+QStringList App::removeUserEntries()
+{
+    QStringList removed;
+    if (QFile::remove(autostartPath()))
+        removed << autostartPath();
+    QFile entry(userDesktopEntryPath());
+    if (entry.open(QIODevice::ReadOnly) && entry.readAll().contains(kGeneratedMarker)) {
+        entry.close();
+        if (entry.remove())
+            removed << entry.fileName();
+    }
+    return removed;
+}
+
 void App::ensureDesktopEntry()
 {
     // KWin only answers ScreenShot2 requests from programs whose .desktop file
@@ -463,8 +487,7 @@ void App::ensureDesktopEntry()
         return;
     const QString self = QFileInfo(QCoreApplication::applicationFilePath()).canonicalFilePath();
     const QString fileName = QStringLiteral(APP_ID ".desktop");
-    const QString userPath =
-        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation) + QLatin1Char('/') + fileName;
+    const QString userPath = userDesktopEntryPath();
 
     for (const QString &path : QStandardPaths::locateAll(QStandardPaths::ApplicationsLocation, fileName)) {
         QSettings entry(path, QSettings::IniFormat);
@@ -485,9 +508,10 @@ void App::ensureDesktopEntry()
                                                "Icon=%4\n"
                                                "Terminal=false\n"
                                                "Categories=Utility;Graphics;\n"
-                                               "X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n")
+                                               "X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n"
+                                               "%5\n")
                                     .arg(QStringLiteral(APP_NAME), QStringLiteral(APP_SUMMARY), quotedExec(),
-                                         QStringLiteral(APP_ID))
+                                         QStringLiteral(APP_ID), QLatin1String(kGeneratedMarker))
                                     .toUtf8();
     if (!writeFile(userPath, contents))
         return;

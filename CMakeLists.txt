@@ -112,7 +112,6 @@ set(CPACK_STRIP_FILES ON)
 set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "qt6-wayland, gstreamer1.0-pipewire, gstreamer1.0-plugins-good")
-set(CPACK_DEBIAN_PACKAGE_SUGGESTS "tesseract-ocr")
 # x264 for MP4 recordings, ximagesrc for recording under X11, AAC for sound.
 set(CPACK_DEBIAN_PACKAGE_RECOMMENDS
     "gstreamer1.0-plugins-ugly, gstreamer1.0-x, gstreamer1.0-libav, xdg-desktop-portal, wl-clipboard")

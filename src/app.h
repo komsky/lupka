@@ -33,6 +33,10 @@ public:
     // instance won the race; the action was then forwarded to it.
     bool start(const QString &initialAction);
 
+    // Remove the login entry and the KDE desktop entry written for this user
+    // (both are written again on the next start). Returns the files removed.
+    static QStringList removeUserEntries();
+
     Settings *settings() const { return m_settings; }
     QString hotkeyBackend() const;
     QString hotkeyStatus() const;

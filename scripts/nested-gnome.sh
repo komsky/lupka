@@ -37,6 +37,13 @@ run gsettings set org.gnome.desktop.background picture-options stretched
 run gsettings set org.gnome.desktop.interface enable-animations false
 run gsettings set org.gnome.shell welcome-dialog-last-shown-version 999
 
+# Screen casting needs PipeWire and a session manager, as on a real desktop.
+run pipewire >"$work/pipewire.log" 2>&1 &
+pids+=($!)
+for _ in $(seq 50); do [[ -S "$work/run/pipewire-0" ]] && break; sleep 0.1; done
+run wireplumber >"$work/wireplumber.log" 2>&1 &
+pids+=($!)
+
 run gnome-shell --nested --wayland --wayland-display=wayland-nested >"$work/shell.log" 2>&1 &
 pids+=($!)
 for _ in $(seq 300); do [[ -S "$work/run/wayland-nested" ]] && break; sleep 0.1; done
@@ -44,6 +51,13 @@ sleep 4
 DISPLAY=$display xdotool key Escape  # leave the startup overview
 run /usr/libexec/xdg-desktop-portal-gnome >"$work/xdp-gnome.log" 2>&1 &
 pids+=($!)
+# The frontend reads the backend's capabilities once; start it after the backend.
+for _ in $(seq 100); do
+    run gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.NameHasOwner org.freedesktop.impl.portal.desktop.gnome 2>/dev/null |
+        grep -q true && break
+    sleep 0.1
+done
 run /usr/libexec/xdg-desktop-portal -r >"$work/xdp.log" 2>&1 &
 pids+=($!)
 run /usr/libexec/gsd-media-keys >"$work/gsd.log" 2>&1 &

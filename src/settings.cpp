@@ -145,9 +145,9 @@ void Settings::setScreenCastToken(const QString &token) { put(QStringLiteral("ca
 double Settings::liveZoomFactor() const { return qBound(1.25, get(QStringLiteral("liveZoom/factor"), 2.0).toDouble(), 16.0); }
 void Settings::setLiveZoomFactor(double factor) { put(QStringLiteral("liveZoom/factor"), factor); }
 
-bool Settings::startAtLogin() const { return get(QStringLiteral("general/startAtLogin"), true).toBool(); }
-void Settings::setStartAtLogin(bool on) { put(QStringLiteral("general/startAtLogin"), on); }
-bool Settings::showTrayIcon() const { return get(QStringLiteral("general/trayIcon"), true).toBool(); }
-void Settings::setShowTrayIcon(bool on) { put(QStringLiteral("general/trayIcon"), on); }
-bool Settings::firstRun() const { return !get(QStringLiteral("general/firstRunDone"), false).toBool(); }
-void Settings::setFirstRunDone() { put(QStringLiteral("general/firstRunDone"), true); }
+bool Settings::startAtLogin() const { return get(QStringLiteral("app/startAtLogin"), true).toBool(); }
+void Settings::setStartAtLogin(bool on) { put(QStringLiteral("app/startAtLogin"), on); }
+bool Settings::showTrayIcon() const { return get(QStringLiteral("app/trayIcon"), true).toBool(); }
+void Settings::setShowTrayIcon(bool on) { put(QStringLiteral("app/trayIcon"), on); }
+bool Settings::firstRun() const { return !get(QStringLiteral("app/firstRunDone"), false).toBool(); }
+void Settings::setFirstRunDone() { put(QStringLiteral("app/firstRunDone"), true); }

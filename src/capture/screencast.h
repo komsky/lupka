@@ -44,6 +44,8 @@ public:
     int openPipeWireRemote(QString *error);
 
     static bool isAvailable();
+    // The closest cursor mode the portal offers to `wanted` (0: leave unset).
+    static quint32 pickCursorMode(quint32 wanted);
 
 Q_SIGNALS:
     void started();

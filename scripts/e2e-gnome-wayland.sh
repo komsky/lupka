@@ -47,6 +47,24 @@ expect_different() {
     value=$(rmse "$2" "$3")
     if awk -v v="$value" -v t="${4:-0.05}" 'BEGIN { exit !(v >= t) }'; then ok "$1 (rmse $value)"; else bad "$1 (rmse $value)"; fi
 }
+# GNOME's "Share Screen" dialog: toggle the display tile until the Share
+# button is enabled (sampled with the pointer away, since hover also turns it
+# blue), then press Share.
+answer_share_dialog() {
+    for _ in $(seq 6); do
+        xdotool mousemove 960 1000
+        sleep 0.6
+        shot share-dialog
+        local rgb
+        rgb=$(convert "$WORK/share-dialog.png" -format "%[fx:int(255*p{1220,318}.r)],%[fx:int(255*p{1220,318}.b)]" info:)
+        if (( ${rgb%%,*} < 90 && ${rgb##*,} > 180 )); then
+            xdotool mousemove 1220 327 sleep 0.3 mousedown 1 sleep 0.15 mouseup 1
+            return 0
+        fi
+        xdotool mousemove 960 640 sleep 0.2 mousedown 1 sleep 0.15 mouseup 1
+    done
+    return 1
+}
 wait_for() {  # seconds command...
     local limit=$1; shift
     for _ in $(seq $((limit * 10))); do "$@" && return 0; sleep 0.1; done
@@ -60,6 +78,11 @@ gsettings set org.gnome.desktop.background picture-options stretched
 gsettings set org.gnome.desktop.interface enable-animations false
 gsettings set org.gnome.shell welcome-dialog-last-shown-version '999'
 
+# Screen casting needs PipeWire and a session manager, as on a real desktop.
+pipewire >"$WORK/pipewire.log" 2>&1 &
+wait_for 5 test -S "$XDG_RUNTIME_DIR/pipewire-0"
+wireplumber >"$WORK/wireplumber.log" 2>&1 &
+
 export WAYLAND_DISPLAY=wayland-e2e
 gnome-shell --nested --wayland --wayland-display=$WAYLAND_DISPLAY >"$WORK/shell.log" 2>&1 &
 wait_for 30 test -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" || { echo "gnome-shell did not start"; tail "$WORK/shell.log"; exit 1; }
@@ -69,6 +92,9 @@ xdotool key Escape
 sleep 1
 
 /usr/libexec/xdg-desktop-portal-gnome >"$WORK/xdp-gnome.log" 2>&1 &
+# The frontend reads the backend's capabilities once; start it after the backend.
+wait_for 10 sh -c 'gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+    --method org.freedesktop.DBus.NameHasOwner org.freedesktop.impl.portal.desktop.gnome | grep -q true'
 /usr/libexec/xdg-desktop-portal -r >"$WORK/xdp.log" 2>&1 &
 /usr/libexec/gsd-media-keys >"$WORK/gsd.log" 2>&1 &
 sleep 2
@@ -88,16 +114,22 @@ bindings=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-key
 binding=$(gsettings get org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/lupka-zoom/ binding)
 [[ "$binding" == "'<Primary>1'" ]] && ok "zoom is bound to <Primary>1" || bad "zoom binding is $binding"
 
-# First portal screenshot asks for permission once; answer "Allow".
+# The first capture asks which screen to share (once): pick the display, Share.
 xdotool mousemove 960 540
 "$bin" zoom
 sleep 3
-shot permission-dialog
-xdotool key Tab Return 2>/dev/null
+answer_share_dialog || bad "could not answer the Share Screen dialog"
+xdotool mousemove 960 540
 sleep 3
 shot zoom-1
-if grep -q "captured" "$WORK/app.log"; then ok "screen captured ($(grep -o 'via "[^"]*"' "$WORK/app.log" | tail -1))"; else bad "screen not captured: $(tail -3 "$WORK/app.log")"; fi
+if grep -q 'captured 1 screens via "ScreenCast portal"' "$WORK/app.log"; then
+    ok "screen captured through the ScreenCast portal (no flash, no shutter sound)"
+else
+    bad "screen not captured by ScreenCast: $(grep capture "$WORK/app.log" | tail -2)"
+fi
 expect_different "overlay shows a zoomed picture" "$WORK/zoom-1.png" "$WORK/baseline.png" 0.05
+grep -q screenCastToken "$XDG_CONFIG_HOME/lupka/lupka.ini" 2>/dev/null || sleep 2
+
 
 # Keyboard focus: Escape must reach the overlay.
 xdotool key Escape
@@ -106,9 +138,10 @@ shot after-escape
 expect_similar "Escape closes the zoom (overlay had keyboard focus)" "$WORK/after-escape.png" "$WORK/baseline.png" 0.03
 
 # The real hotkey path: gnome-shell grabs Ctrl+1, gsd-media-keys runs "lupka zoom".
+# The saved restore token means no dialog this time.
 xdotool mousemove 960 540
 xdotool key ctrl+1
-sleep 3
+sleep 2
 shot hotkey-zoom
 expect_different "Ctrl+1 through GNOME's shortcut zooms" "$WORK/hotkey-zoom.png" "$WORK/baseline.png" 0.05
 xdotool click 1
@@ -135,6 +168,9 @@ if timeout 5 wl-paste --list-types 2>/dev/null | grep -q image/png; then
 else
     bad "no image on the Wayland clipboard after snip"
 fi
+
+[[ $(grep -c 'captured 1 screens via "ScreenCast portal"' "$WORK/app.log") -ge 3 ]] &&
+    ok "later captures reuse the saved permission" || bad "later captures failed: $(grep capture "$WORK/app.log" | tail -3)"
 
 "$bin" quit
 sleep 1

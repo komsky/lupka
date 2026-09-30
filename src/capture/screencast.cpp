@@ -10,6 +10,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusUnixFileDescriptor>
+#include <QDBusVariant>
 #include <QRandomGenerator>
 
 #include <fcntl.h>
@@ -87,13 +88,40 @@ ScreenCastSession::~ScreenCastSession()
     close();
 }
 
-bool ScreenCastSession::isAvailable()
+namespace {
+
+QVariant portalProperty(const QString &name)
 {
     QDBusMessage message = QDBusMessage::createMethodCall(kService, kPath, QStringLiteral("org.freedesktop.DBus.Properties"),
                                                           QStringLiteral("Get"));
-    message << kInterface << QStringLiteral("version");
+    message << kInterface << name;
     const QDBusMessage reply = QDBusConnection::sessionBus().call(message, QDBus::Block, 2000);
-    return reply.type() == QDBusMessage::ReplyMessage;
+    if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty())
+        return {};
+    return qvariant_cast<QDBusVariant>(reply.arguments().constFirst()).variant();
+}
+
+}  // namespace
+
+bool ScreenCastSession::isAvailable()
+{
+    return portalProperty(QStringLiteral("version")).isValid();
+}
+
+quint32 ScreenCastSession::pickCursorMode(quint32 wanted)
+{
+    // Asking for a mode the desktop does not offer is an error, and GNOME and
+    // KDE differ in what they offer.
+    const quint32 available = portalProperty(QStringLiteral("AvailableCursorModes")).toUInt();
+    if (available == 0 || (available & wanted))
+        return available == 0 ? 0 : wanted;
+    if (wanted == Hidden && (available & Metadata))
+        return Metadata;  // the cursor travels beside the frames, not in them
+    for (quint32 mode : {Hidden, Metadata, Embedded}) {
+        if (available & mode)
+            return mode;
+    }
+    return 0;
 }
 
 void ScreenCastSession::start(const Options &options)
@@ -152,8 +180,9 @@ void ScreenCastSession::onCreateSessionResponse(uint response, const QVariantMap
     QVariantMap options{
         {QStringLiteral("types"), m_options.types},
         {QStringLiteral("multiple"), m_options.multiple},
-        {QStringLiteral("cursor_mode"), m_options.cursorMode},
     };
+    if (const quint32 cursor = pickCursorMode(m_options.cursorMode))
+        options.insert(QStringLiteral("cursor_mode"), cursor);
     if (m_options.persist)
         options.insert(QStringLiteral("persist_mode"), uint(2));
     if (!m_options.restoreToken.isEmpty())

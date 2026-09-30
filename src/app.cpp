@@ -204,6 +204,7 @@ bool App::debounce(Action action)
 
 void App::trigger(Action action)
 {
+    qCDebug(lcApp).noquote() << "trigger" << actionInfo(action).id;
     if (m_quitting)
         return;
     switch (action) {
@@ -231,10 +232,14 @@ void App::trigger(Action action)
             return;
         }
         if (m_break && m_break->isRunning()) {
-            // As in ZoomIt, the zoom hotkey ends a running break.
-            if (action == Action::Zoom)
+            // As in ZoomIt, the zoom hotkey ends a running break. Other
+            // hotkeys wait until the timer is no longer in front.
+            if (action == Action::Zoom) {
                 m_break->stop();
-            return;
+                return;
+            }
+            if (m_break->isActiveWindow())
+                return;
         }
         const Session::Kind kind = action == Action::Zoom       ? Session::Kind::Zoom
                                    : action == Action::Draw     ? Session::Kind::Draw
@@ -304,12 +309,12 @@ void App::trigger(Action action)
     }
 }
 
-void App::beginCapture(std::optional<Session::Kind> kind)
+bool App::beginCapture(std::optional<Session::Kind> kind)
 {
     if (m_capture->isBusy())
-        return;
+        return false;
     m_pending = kind;
-    m_capture->capture();
+    return m_capture->capture();
 }
 
 void App::onCaptured(const ScreenImages &images)
@@ -391,8 +396,8 @@ void App::toggleBreak()
         screen = QGuiApplication::primaryScreen();
     if (m_settings->breakBackground() == Settings::BreakBackground::FadedDesktop) {
         // The faded desktop needs a fresh screenshot first.
-        m_pendingBreakScreen = screen;
-        beginCapture(std::nullopt);
+        if (beginCapture(std::nullopt))
+            m_pendingBreakScreen = screen;
         return;
     }
     m_break->start(screen, QImage());
@@ -516,9 +521,15 @@ void App::quit()
         m_session->leave();
     if (m_liveZoom->isActive())
         m_liveZoom->toggle();
-    if (m_recorder->isRecording())
-        m_recorder->stop();
     // An explicit quit hands the keys back to other applications.
     m_hotkeys->unregisterAll();
+    if (m_recorder->isRecording()) {
+        // Let the recording finish writing its file before we go.
+        connect(m_recorder, &Recorder::finished, qApp, &QCoreApplication::quit);
+        connect(m_recorder, &Recorder::failed, qApp, &QCoreApplication::quit);
+        QTimer::singleShot(20000, qApp, &QCoreApplication::quit);
+        m_recorder->stop();
+        return;
+    }
     QCoreApplication::quit();
 }

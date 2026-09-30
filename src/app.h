@@ -53,7 +53,7 @@ Q_SIGNALS:
     void recordingChanged(bool recording);
 
 private:
-    void beginCapture(std::optional<Session::Kind> kind);
+    bool beginCapture(std::optional<Session::Kind> kind);
     void onCaptured(const ScreenImages &images);
     void onCaptureFailed(const QString &reason);
     void onCopyRequested(const QImage &image, bool snip);

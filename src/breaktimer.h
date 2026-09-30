@@ -33,6 +33,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void hideEvent(QHideEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     void setRemaining(qint64 ms);
@@ -43,6 +44,7 @@ private:
     QDateTime m_end;
     QTimer m_tick;
     QImage m_background;
+    QImage m_image;  // the background image file, decoded once per break
     int m_wheelRemainder = 0;
     bool m_running = false;
     bool m_alarmPlayed = false;

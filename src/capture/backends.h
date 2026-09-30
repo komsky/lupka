@@ -62,10 +62,11 @@ private:
     void unwatch();
     void fail(const QString &reason);
 
-    QList<QScreen *> m_screens;
+    QList<QPointer<QScreen>> m_screens;
     QString m_requestPath;
     QTimer m_timeout;
     bool m_active = false;
+    int m_generation = 0;  // ignores late answers to an earlier request
 };
 
 class ScreenCastSession;
@@ -89,7 +90,7 @@ private:
 
     Settings *m_settings;
     ScreenCastSession *m_session = nullptr;
-    QList<QScreen *> m_screens;
+    QList<QPointer<QScreen>> m_screens;
 };
 
 // wlroots compositors (sway, Hyprland, ...): the grim command.

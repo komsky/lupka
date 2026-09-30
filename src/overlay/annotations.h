@@ -68,6 +68,8 @@ public:
     // Paint one shape. `under` is what lies beneath it, in the same
     // coordinate space, which highlighter and blur need.
     static void paintShape(QPainter &painter, const Shape &shape, const QImage &under);
+    // A cheap stand-in for a blur shape while it is being dragged.
+    static void paintPreview(QPainter &painter, const Shape &shape);
     // Pixel rectangle of `rect` inside `image`, respecting its device pixel ratio.
     static QRect toPixels(const QImage &image, const QRectF &rect);
 

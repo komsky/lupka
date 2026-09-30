@@ -31,6 +31,8 @@ public:
     enum class Response { Ignore, Leave, CropCopy, CropSave };
     Response respondTo(Action action) const;
     void crop(OverlayWindow::CropPurpose purpose);
+    // Snip, snip to file, record region: pick a rectangle on any monitor.
+    bool isPicking() const;
 
 Q_SIGNALS:
     void finished();

@@ -38,7 +38,7 @@ Q_SIGNALS:
 private:
     void startWayland();
     void onCastStarted();
-    bool launch(const QString &videoSource, const QRect &cropPixels, double cropScaleFromStream);
+    bool launch(const QString &videoSource, const QRect &cropPixels, double cropScaleFromStream, QString *error);
     void pollBus();
     void teardown();
     QString outputPath(const QString &extension) const;
@@ -52,4 +52,6 @@ private:
     QString m_path;
     QTimer m_bus;
     bool m_stopping = false;
+    bool m_retriedWithoutToken = false;
+    int m_generation = 0;
 };

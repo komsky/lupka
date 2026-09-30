@@ -29,10 +29,16 @@ void printUsage()
         "Actions (sent to the running instance, which is started if needed):\n"
         "  zoom          zoom into the screen, pan with the mouse, click to draw\n"
         "  draw          draw on the screen without zooming\n"
+        "  livedraw      draw over the live desktop\n"
         "  snip          copy a region of the screen to the clipboard\n"
         "  snip-save     save a region of the screen to a file\n"
         "  break         show the break timer\n"
         "  livezoom      toggle live zoom (desktop magnifier)\n"
+        "  record        start or stop recording the screen\n"
+        "  record-region start or stop recording a region\n"
+        "  record-window start or stop recording a window\n"
+        "  demotype      type the next DemoType snippet\n"
+        "  demotype-back step back one DemoType snippet\n"
         "  settings      open the settings window\n"
         "  quit          quit the running instance and release its shortcuts\n"
         "\n"
@@ -89,6 +95,9 @@ int main(int argc, char *argv[])
         }
     }
 
+    // The icons live in a resource compiled into the static core library,
+    // which the linker would otherwise leave out.
+    Q_INIT_RESOURCE(resources);
     platform::prepareEnvironment();
 
     // Fast path, used by every desktop hotkey: hand the action to the running

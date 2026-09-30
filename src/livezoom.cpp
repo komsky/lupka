@@ -96,6 +96,8 @@ void LiveZoom::setActive(bool active)
         GSettings *apps = g_settings_new(kAppsSchema);
         GSettings *mag = g_settings_new(kMagSchema);
         if (active) {
+            // Remember the user's own magnifier setup, to put it back afterwards.
+            m_savedEnabled = g_settings_get_boolean(apps, "screen-magnifier-enabled");
             m_savedFactor = g_settings_get_double(mag, "mag-factor");
             m_savedTracking = gsettingsutil::getString(mag, "mouse-tracking");
             m_factor = m_settings->liveZoomFactor();
@@ -103,7 +105,7 @@ void LiveZoom::setActive(bool active)
             g_settings_set_double(mag, "mag-factor", m_factor);
             g_settings_set_boolean(apps, "screen-magnifier-enabled", TRUE);
         } else {
-            g_settings_set_boolean(apps, "screen-magnifier-enabled", FALSE);
+            g_settings_set_boolean(apps, "screen-magnifier-enabled", m_savedEnabled ? TRUE : FALSE);
             if (m_savedFactor > 0)
                 g_settings_set_double(mag, "mag-factor", m_savedFactor);
             if (!m_savedTracking.isEmpty())

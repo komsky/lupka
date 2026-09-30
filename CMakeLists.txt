@@ -98,6 +98,8 @@ foreach(size 32 48 64 128 256)
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps
             RENAME ${APP_ID}.png)
 endforeach()
+install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/${APP_BIN} RENAME copyright)
+install(FILES README.md DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/${APP_BIN})
 
 # Debian package: cpack -G DEB
 set(CPACK_PACKAGE_NAME ${APP_BIN})

@@ -6,6 +6,7 @@
 #include "x11util.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QFile>
 #include <QKeyEvent>
 #include <QPainter>
@@ -85,6 +86,9 @@ BreakTimer::BreakTimer(Settings *settings)
 void BreakTimer::start(QScreen *screen, const QImage &desktop)
 {
     m_background = desktop;
+    m_image = m_settings->breakBackground() == Settings::BreakBackground::Image
+                  ? QImage(m_settings->breakImageFile())
+                  : QImage();
     setRemaining(qint64(m_settings->breakMinutes()) * 60000);
     m_alarmPlayed = false;
     m_running = true;
@@ -102,6 +106,7 @@ void BreakTimer::stop()
     m_running = false;
     m_tick.stop();
     m_background = QImage();
+    m_image = QImage();
     hide();
 }
 
@@ -124,6 +129,13 @@ void BreakTimer::showEvent(QShowEvent *event)
 void BreakTimer::hideEvent(QHideEvent *event)
 {
     QWidget::hideEvent(event);
+}
+
+void BreakTimer::closeEvent(QCloseEvent *event)
+{
+    // Closed by the window manager: stop the countdown too.
+    stop();
+    event->accept();
 }
 
 qint64 BreakTimer::remainingMs() const
@@ -193,7 +205,7 @@ void BreakTimer::paintEvent(QPaintEvent *)
         painter.setOpacity(opacity);
     } else if (mode == Settings::BreakBackground::Image) {
         painter.fillRect(rect(), m_settings->breakBackgroundColor());
-        const QImage image(m_settings->breakImageFile());
+        const QImage &image = m_image;
         if (!image.isNull()) {
             if (m_settings->breakScaleImage()) {
                 painter.drawImage(QRectF(rect()), image);

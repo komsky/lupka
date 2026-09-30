@@ -7,6 +7,7 @@
 #include <QDBusMetaType>
 #include <QDBusObjectPath>
 #include <QDBusReply>
+#include <QDBusServiceWatcher>
 #include <QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(lcHotkeys)
@@ -62,6 +63,14 @@ public:
     {
         qDBusRegisterMetaType<DBusKeySequence>();
         qDBusRegisterMetaType<QList<DBusKeySequence>>();
+        // kglobalaccel can restart (it lives in KWin on Plasma 6); register again.
+        auto *watcher = new QDBusServiceWatcher(kService, QDBusConnection::sessionBus(),
+                                                QDBusServiceWatcher::WatchForRegistration, this);
+        connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, [this] {
+            m_componentConnected = false;
+            if (!m_last.isEmpty())
+                apply(m_last);
+        });
     }
 
     QString name() const override { return QStringLiteral("KDE global shortcuts"); }
@@ -69,7 +78,9 @@ public:
     void apply(const Bindings &bindings) override
     {
         setError({});
+        m_last = bindings;
         QStringList failures;
+        QStringList taken;
         for (auto it = bindings.constBegin(); it != bindings.constEnd(); ++it) {
             const QStringList id = actionId(it.key());
             call(QStringLiteral("doRegister"), {id});
@@ -80,8 +91,14 @@ public:
             }
             // Our settings are the source of truth, so disable autoloading of
             // whatever kglobalaccel remembered from last time.
-            if (!setKeys(id, keys, kSetPresent | kNoAutoloading))
+            QList<int> granted;
+            if (!setKeys(id, keys, kSetPresent | kNoAutoloading, &granted))
                 failures << actionInfo(it.key()).label;
+            // kglobalaccel silently drops keys another application owns.
+            for (int key : std::as_const(keys)) {
+                if (!granted.contains(key))
+                    taken << QKeySequence(key).toString(QKeySequence::NativeText);
+            }
             setKeys(id, defaultKeys(it.key()), kIsDefault);
             if (!m_registered.contains(it.key()))
                 m_registered << it.key();
@@ -94,8 +111,12 @@ public:
             }
         }
         connectComponent();
+        QStringList problems;
         if (!failures.isEmpty())
-            setError(QStringLiteral("KDE refused shortcuts for: %1").arg(failures.join(QStringLiteral(", "))));
+            problems << QStringLiteral("KDE refused shortcuts for: %1").arg(failures.join(QStringLiteral(", ")));
+        if (!taken.isEmpty())
+            problems << QStringLiteral("Already used by another application: %1").arg(taken.join(QStringLiteral(", ")));
+        setError(problems.join(QLatin1Char('\n')));
     }
 
     void unregisterAll() override
@@ -141,7 +162,7 @@ private:
         return QDBusConnection::sessionBus().call(message, QDBus::Block, 3000);
     }
 
-    bool setKeys(const QStringList &id, const QList<int> &keys, uint flags)
+    bool setKeys(const QStringList &id, const QList<int> &keys, uint flags, QList<int> *granted = nullptr)
     {
         // Plasma 6 (and late KF5) take QList<QKeySequence>; older ones a flat int list.
         if (m_useKeySequences) {
@@ -150,8 +171,16 @@ private:
                 sequences << DBusKeySequence{{key, 0, 0, 0}};
             const QDBusMessage reply =
                 call(QStringLiteral("setShortcutKeys"), {id, QVariant::fromValue(sequences), flags});
-            if (reply.type() != QDBusMessage::ErrorMessage)
+            if (reply.type() != QDBusMessage::ErrorMessage) {
+                if (granted && !reply.arguments().isEmpty()) {
+                    const auto result = qdbus_cast<QList<DBusKeySequence>>(reply.arguments().constFirst());
+                    for (const DBusKeySequence &sequence : result) {
+                        if (!sequence.keys.isEmpty() && sequence.keys.constFirst() != 0)
+                            *granted << sequence.keys.constFirst();
+                    }
+                }
                 return true;
+            }
             if (reply.errorName() != QLatin1String("org.freedesktop.DBus.Error.UnknownMethod")) {
                 qCWarning(lcHotkeys) << "setShortcutKeys failed:" << reply.errorMessage();
                 return false;
@@ -162,6 +191,12 @@ private:
         if (reply.type() == QDBusMessage::ErrorMessage) {
             qCWarning(lcHotkeys) << "setShortcut failed:" << reply.errorMessage();
             return false;
+        }
+        if (granted && !reply.arguments().isEmpty()) {
+            for (int key : qdbus_cast<QList<int>>(reply.arguments().constFirst())) {
+                if (key)
+                    *granted << key;
+            }
         }
         return true;
     }
@@ -181,6 +216,7 @@ private:
             SLOT(onPressed(QString, QString, qlonglong)));
     }
 
+    Bindings m_last;
     bool m_useKeySequences = true;
     bool m_componentConnected = false;
     QList<Action> m_registered;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QList>
+
 class QWindow;
 
 // X11 helpers for the overlay. All of them are no-ops outside X11.
@@ -14,5 +16,8 @@ void ungrabKeyboard();
 
 // Ask the window manager to activate `window` right now.
 void activate(QWindow *window);
+
+// Keycodes that produce `keysym` in the current keyboard mapping.
+QList<int> keycodesFor(quint32 keysym);
 
 }  // namespace x11util

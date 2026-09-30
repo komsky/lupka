@@ -320,7 +320,12 @@ void Canvas::add(const Shape &shape)
         return;
     pushHistory();
     m_state.shapes.append(shape);
-    invalidate();
+    // Paint just the new shape onto the cached image rather than redoing
+    // every earlier one (blurs in particular are expensive).
+    if (m_composedValid) {
+        QPainter p(&m_composed);
+        paintShape(p, shape, m_composed);
+    }
 }
 
 void Canvas::clear()
@@ -386,6 +391,20 @@ QRect Canvas::toPixels(const QImage &image, const QRectF &rect)
     const double dpr = image.devicePixelRatio();
     const QRectF px(rect.x() * dpr, rect.y() * dpr, rect.width() * dpr, rect.height() * dpr);
     return px.toAlignedRect().intersected(image.rect());
+}
+
+void Canvas::paintPreview(QPainter &painter, const Shape &shape)
+{
+    if (shape.points.isEmpty())
+        return;
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    const QPainterPath area = effectArea(shape);
+    painter.fillPath(area, QColor(128, 128, 128, 110));
+    QPen outline(QColor(255, 255, 255, 200), 0);
+    outline.setStyle(Qt::DashLine);
+    painter.strokePath(area, outline);
+    painter.restore();
 }
 
 void Canvas::paintShape(QPainter &painter, const Shape &shape, const QImage &under)

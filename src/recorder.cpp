@@ -9,6 +9,7 @@
 #include <QCursor>
 #include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 
@@ -141,6 +142,7 @@ void Recorder::start(Mode mode, QScreen *screen, const QRect &region)
 {
     if (isRecording())
         return;
+    m_retriedWithoutToken = false;
     if (!isAvailable()) {
         Q_EMIT failed(tr("Recording needs GStreamer with an H.264 or VP8 encoder "
                          "(gstreamer1.0-plugins-ugly or -good) and %1.")
@@ -165,17 +167,23 @@ void Recorder::start(Mode mode, QScreen *screen, const QRect &region)
             source = QStringLiteral("ximagesrc use-damage=false show-pointer=true xid=%1").arg(xid);
     }
     if (source.isEmpty()) {
-        QRect area = mode == Mode::Region && !region.isEmpty() ? region : m_screen->geometry();
-        area = QRect(QPoint(qRound(area.x() * dpr), qRound(area.y() * dpr)),
-                     QSize(qRound(area.width() * dpr), qRound(area.height() * dpr)));
+        // Qt keeps each screen's top-left corner in device pixels and scales
+        // from there, so map through the screen's origin.
+        const QRect area = mode == Mode::Region && !region.isEmpty() ? region : m_screen->geometry();
+        const QPoint origin = m_screen->geometry().topLeft();
+        const QPoint topLeft = origin + QPoint(qRound((area.x() - origin.x()) * dpr), qRound((area.y() - origin.y()) * dpr));
+        const QRect device(topLeft, QSize(qRound(area.width() * dpr), qRound(area.height() * dpr)));
         source = QStringLiteral("ximagesrc use-damage=false show-pointer=true startx=%1 starty=%2 endx=%3 endy=%4")
-                     .arg(area.left())
-                     .arg(area.top())
-                     .arg(area.right())
-                     .arg(area.bottom());
+                     .arg(device.left())
+                     .arg(device.top())
+                     .arg(device.right())
+                     .arg(device.bottom());
     }
-    if (!launch(source, QRect(), 0))
+    QString error;
+    if (!launch(source, QRect(), 0, &error)) {
         teardown();
+        Q_EMIT failed(error);
+    }
 }
 
 void Recorder::startWayland()
@@ -213,6 +221,20 @@ void Recorder::onCastStarted()
         return;
     }
 
+    // A remembered monitor that is not where the region was picked: forget
+    // it and ask again, or we would record the wrong screen.
+    if (m_mode == Mode::Region && !stream.geometry.isEmpty() && !stream.geometry.intersects(m_region)
+        && !m_retriedWithoutToken) {
+        ::close(fd);
+        m_retriedWithoutToken = true;
+        m_settings->setRecordToken(QString());
+        m_session->close();
+        m_session->deleteLater();
+        m_session = nullptr;
+        startWayland();
+        return;
+    }
+
     QRectF crop;
     double logicalWidth = stream.geometry.width();
     if (m_mode == Mode::Region && !m_region.isEmpty()) {
@@ -226,13 +248,16 @@ void Recorder::onCastStarted()
         QStringLiteral("pipewiresrc fd=%1 path=%2 do-timestamp=true keepalive-time=1000 always-copy=true")
             .arg(fd)
             .arg(stream.node);
-    const bool ok = launch(source, crop.toAlignedRect(), logicalWidth);
+    QString launchError;
+    const bool ok = launch(source, crop.toAlignedRect(), logicalWidth, &launchError);
     ::close(fd);  // pipewiresrc has its own duplicate
-    if (!ok)
+    if (!ok) {
         teardown();
+        Q_EMIT failed(launchError);
+    }
 }
 
-bool Recorder::launch(const QString &videoSource, const QRect &crop, double logicalWidth)
+bool Recorder::launch(const QString &videoSource, const QRect &crop, double logicalWidth, QString *error)
 {
     const bool mp4 = gstutil::hasElement("x264enc") && gstutil::hasElement("mp4mux");
     QString video = mp4 ? QStringLiteral("x264enc speed-preset=veryfast tune=zerolatency key-int-max=60 bitrate=12000 ! "
@@ -240,7 +265,9 @@ bool Recorder::launch(const QString &videoSource, const QRect &crop, double logi
                         : QStringLiteral("vp8enc deadline=1 cpu-used=8 target-bitrate=8000000 keyframe-max-dist=60");
     const char *audioEncoder = mp4 ? firstAvailable({"avenc_aac", "fdkaacenc", "voaacenc"}) : firstAvailable({"opusenc"});
     const bool audio = m_settings->recordAudio() && audioEncoder && audioSourceWorks();
-    const QString muxer = mp4 ? QStringLiteral("mp4mux name=mux faststart=true") : QStringLiteral("webmmux name=mux");
+    // No faststart: it spools the whole video through a temporary file and
+    // copies it at the end, which can outlast our stop timeout.
+    const QString muxer = mp4 ? QStringLiteral("mp4mux name=mux") : QStringLiteral("webmmux name=mux");
 
     QString description = QStringLiteral("%1 ! queue ! videoconvert ! videorate ! video/x-raw,framerate=%2/1 ! "
                                          "videocrop name=crop ! videoconvert ! video/x-raw,format=I420 ! %3 ! queue ! mux. ")
@@ -254,14 +281,13 @@ bool Recorder::launch(const QString &videoSource, const QRect &crop, double logi
     }
     description += muxer + QStringLiteral(" ! filesink name=out");
 
-    GError *error = nullptr;
-    GstElement *pipeline = gst_parse_launch(description.toUtf8().constData(), &error);
-    if (!pipeline || error) {
-        const QString message = QString::fromUtf8(error ? error->message : "cannot build the recording pipeline");
-        g_clear_error(&error);
+    GError *parseError = nullptr;
+    GstElement *pipeline = gst_parse_launch(description.toUtf8().constData(), &parseError);
+    if (!pipeline || parseError) {
+        *error = QString::fromUtf8(parseError ? parseError->message : "cannot build the recording pipeline");
+        g_clear_error(&parseError);
         if (pipeline)
             gst_object_unref(pipeline);
-        Q_EMIT failed(message);
         return false;
     }
     m_pipeline = pipeline;
@@ -279,7 +305,7 @@ bool Recorder::launch(const QString &videoSource, const QRect &crop, double logi
     gst_object_unref(cropper);
 
     if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        Q_EMIT failed(tr("The recording pipeline did not start."));
+        *error = tr("The recording pipeline did not start (is %1 writable?).").arg(QFileInfo(m_path).absolutePath());
         return false;
     }
     qCInfo(lcRecord).noquote() << "recording to" << m_path << (audio ? "with audio" : "without audio");
@@ -301,11 +327,13 @@ void Recorder::stop()
     if (m_stopping)
         return;
     m_stopping = true;
+    qCInfo(lcRecord) << "stopping";
     // End of stream lets the muxer write its index; without it the file is unplayable.
     gst_element_send_event(m_pipeline, gst_event_new_eos());
-    QTimer::singleShot(5000, this, [this] {
-        if (m_pipeline && m_stopping) {
-            qCWarning(lcRecord) << "no end of stream after 5 s, closing anyway";
+    const int generation = ++m_generation;
+    QTimer::singleShot(15000, this, [this, generation] {
+        if (m_pipeline && m_stopping && generation == m_generation) {
+            qCWarning(lcRecord) << "no end of stream after 15 s, closing anyway";
             const QString path = m_path;
             teardown();
             Q_EMIT finished(path);
@@ -322,6 +350,7 @@ void Recorder::pollBus()
         switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_EOS: {
             const QString path = m_path;
+            qCInfo(lcRecord).noquote() << "finished" << path;
             gst_message_unref(message);
             gst_object_unref(bus);
             teardown();

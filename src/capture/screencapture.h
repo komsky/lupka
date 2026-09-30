@@ -39,7 +39,8 @@ class ScreenCapture : public QObject
 public:
     explicit ScreenCapture(Settings *settings, QObject *parent = nullptr);
 
-    void capture();
+    // False if a capture is already running.
+    bool capture();
     bool isBusy() const { return m_busy; }
     QString backendName() const;
 
@@ -51,7 +52,6 @@ private:
     void tryBackend(int index);
 
     QList<CaptureBackend *> m_backends;
-    int m_preferred = 0;
     int m_current = -1;
     bool m_busy = false;
     QStringList m_errors;

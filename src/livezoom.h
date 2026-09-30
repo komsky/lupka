@@ -34,6 +34,7 @@ private:
     double m_factor = 2.0;
     int m_kwinSteps = 0;
     // GNOME values to restore when live zoom ends.
+    bool m_savedEnabled = false;
     double m_savedFactor = 0;
     QString m_savedTracking;
 };

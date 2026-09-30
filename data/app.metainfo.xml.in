@@ -19,6 +19,8 @@
       <li>Ctrl+2 draws on the screen without zooming, with whiteboard and blackboard modes</li>
       <li>Super+Shift+S or Ctrl+6 copies a region of the screen to the clipboard</li>
       <li>Ctrl+3 shows a break timer, Ctrl+4 toggles the desktop's live magnifier</li>
+      <li>Ctrl+5 records the screen, a region or a window to MP4 or WebM</li>
+      <li>Ctrl+7 types prepared snippets into any window (DemoType)</li>
     </ul>
     <p>Works on GNOME and KDE Plasma, under Wayland and X11.</p>
   </description>

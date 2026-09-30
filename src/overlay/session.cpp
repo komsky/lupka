@@ -4,6 +4,9 @@
 
 #include <QCursor>
 #include <QGuiApplication>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcOverlay, "app.overlay")
 
 Session::Session(Kind kind, const ScreenImages &images, Settings *settings, QObject *parent)
     : QObject(parent)
@@ -22,13 +25,39 @@ Session::Session(Kind kind, const ScreenImages &images, Settings *settings, QObj
         connect(window, &OverlayWindow::saved, this, &Session::saved);
         connect(window, &OverlayWindow::regionSelected, this, &Session::regionSelected);
         connect(window, &OverlayWindow::pointerSeen, this, &Session::activate);
+        connect(window, &OverlayWindow::pointerEntered, this, [this](OverlayWindow *entered) {
+            // Snip overlays stay on every monitor; keys go to the one under the pointer.
+            if (!isPicking())
+                return;
+            m_active = entered;
+            for (const auto &other : std::as_const(m_windows)) {
+                if (other)
+                    other->setKeyTarget(entered);
+            }
+        });
     }
+
+    // A monitor going away takes its overlay with it; if that was the one in
+    // use, the session is over.
+    connect(qGuiApp, &QGuiApplication::screenRemoved, this, [this](QScreen *screen) {
+        for (const auto &window : std::as_const(m_windows)) {
+            if (!window || window->targetScreen() != screen)
+                continue;
+            if (window == m_active || m_windows.size() == 1) {
+                finish();
+                return;
+            }
+            window->hide();
+            window->deleteLater();
+        }
+        m_windows.removeIf([](const QPointer<OverlayWindow> &w) { return w.isNull() || w->isHidden(); });
+    });
 
     // Under Wayland we only learn where the pointer is once it enters one of
     // our windows. If that never happens (pointer hidden, touch screen), use
     // the primary screen.
     m_pointerTimeout.setSingleShot(true);
-    m_pointerTimeout.setInterval(250);
+    m_pointerTimeout.setInterval(600);
     connect(&m_pointerTimeout, &QTimer::timeout, this, [this] {
         if (m_active)
             return;
@@ -52,9 +81,14 @@ Session::~Session()
     }
 }
 
+bool Session::isPicking() const
+{
+    return m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion;
+}
+
 Session::Response Session::respondTo(Action action) const
 {
-    const bool snipping = m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion;
+    const bool snipping = isPicking();
     switch (action) {
     case Action::Zoom:
         // Ctrl+1 ends zoom and draw alike, as in ZoomIt.
@@ -86,7 +120,7 @@ void Session::start()
         return;
     }
 
-    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion) {
+    if (isPicking()) {
         // Pick on whichever monitor the user drags on; every overlay is live.
         for (const auto &window : std::as_const(m_windows)) {
             window->showOnScreen();
@@ -116,9 +150,10 @@ void Session::start()
 
 void Session::activate(OverlayWindow *window, const QPointF &pos)
 {
+    qCDebug(lcOverlay) << "pointer first seen at" << pos << "in" << window->geometry();
     if (m_finished)
         return;
-    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion) {
+    if (isPicking()) {
         // All snip overlays stay; keys typed anywhere go to the one in use.
         m_active = window;
         for (const auto &other : std::as_const(m_windows)) {
@@ -145,11 +180,16 @@ void Session::activate(OverlayWindow *window, const QPointF &pos)
 
 void Session::leave()
 {
-    if (m_kind == Kind::Snip || m_kind == Kind::SnipSave || m_kind == Kind::RecordRegion || !m_active) {
-        finish();
-        return;
+    // Through the windows, which may have to wait for an open save dialog.
+    bool any = false;
+    for (const auto &window : std::as_const(m_windows)) {
+        if (window) {
+            window->leave();
+            any = true;
+        }
     }
-    m_active->leave();
+    if (!any)
+        finish();
 }
 
 void Session::finish()

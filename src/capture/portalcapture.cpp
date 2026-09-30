@@ -25,8 +25,11 @@ PortalCapture::PortalCapture(QObject *parent)
 void PortalCapture::capture(const QList<QScreen *> &screens)
 {
     unwatch();
-    m_screens = screens;
+    m_screens.clear();
+    for (QScreen *screen : screens)
+        m_screens << screen;
     m_active = true;
+    const int generation = ++m_generation;
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     const QString token = QStringLiteral("capture%1").arg(QRandomGenerator::global()->generate());
@@ -45,8 +48,10 @@ void PortalCapture::capture(const QList<QScreen *> &screens)
         {QStringLiteral("modal"), false},
     };
     auto *call = new QDBusPendingCallWatcher(bus.asyncCall(message), this);
-    connect(call, &QDBusPendingCallWatcher::finished, this, [this, call] {
+    connect(call, &QDBusPendingCallWatcher::finished, this, [this, call, generation] {
         call->deleteLater();
+        if (generation != m_generation)
+            return;
         const QDBusPendingReply<QDBusObjectPath> reply = *call;
         if (reply.isError()) {
             fail(reply.error().message());
@@ -97,7 +102,12 @@ void PortalCapture::onResponse(uint response, const QVariantMap &results)
         return;
     }
     m_active = false;
-    Q_EMIT finished(splitDesktopImage(desktop, m_screens));
+    QList<QScreen *> screens;
+    for (const auto &screen : std::as_const(m_screens)) {
+        if (screen)
+            screens << screen;
+    }
+    Q_EMIT finished(splitDesktopImage(desktop, screens));
 }
 
 void PortalCapture::fail(const QString &reason)

@@ -8,5 +8,5 @@ RUN dnf -y install --setopt=install_weak_deps=False \
         gnome-shell mutter mutter-devkit gnome-settings-daemon gsettings-desktop-schemas \
         xdg-desktop-portal xdg-desktop-portal-gnome pipewire wireplumber \
         xorg-x11-server-Xvfb xdpyinfo xdotool ImageMagick dbus-daemon dbus-tools wl-clipboard \
-        mesa-dri-drivers mesa-libEGL mesa-libgbm dejavu-sans-fonts procps-ng which \
+        mesa-dri-drivers mesa-libEGL mesa-libgbm dejavu-sans-fonts procps-ng which python3-dbusmock \
     && dnf clean all

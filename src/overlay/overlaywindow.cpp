@@ -1,11 +1,13 @@
 #include "overlaywindow.h"
 
 #include "config.h"
+#include "hotkeys/keynames.h"
 #include "platform.h"
 #include "settings.h"
 #include "x11util.h"
 #include "zoommath.h"
 
+#include <QCloseEvent>
 #include <QCursor>
 #include <QDateTime>
 #include <QDir>
@@ -187,6 +189,10 @@ void OverlayWindow::begin(const QPointF &cursor)
 
 void OverlayWindow::leave()
 {
+    if (m_modalOpen) {
+        m_leaveRequested = true;
+        return;
+    }
     if (m_leaving)
         return;
     m_leaving = true;
@@ -603,27 +609,42 @@ void OverlayWindow::saveArea(const QRectF &area)
     // Our keyboard grab would starve the dialog; give the keyboard back meanwhile.
     if (platform::isX11())
         x11util::ungrabKeyboard();
-    QFileDialog dialog(this, tr("%1: Save Zoomed Screen").arg(QStringLiteral(APP_NAME)), suggested);
-    dialog.setAcceptMode(QFileDialog::AcceptSave);
-    dialog.setOption(QFileDialog::DontUseNativeDialog);
-    dialog.setNameFilters({kZoomedPng, kActualPng, kZoomedJpg, kActualJpg});
-    dialog.selectNameFilter(kZoomedPng);
-    dialog.setDefaultSuffix(QStringLiteral("png"));
-    connect(&dialog, &QFileDialog::filterSelected, &dialog, [&dialog](const QString &filter) {
-        dialog.setDefaultSuffix(filter.contains(QLatin1String("JPEG")) ? QStringLiteral("jpg") : QStringLiteral("png"));
+    // Hotkeys and quit requests keep arriving while the dialog runs its own
+    // event loop; leave() waits for it (see m_modalOpen) so this window, the
+    // dialog's parent, is never deleted underneath it.
+    m_modalOpen = true;
+    auto *dialog = new QFileDialog(this, tr("%1: Save Zoomed Screen").arg(QStringLiteral(APP_NAME)), suggested);
+    dialog->setAcceptMode(QFileDialog::AcceptSave);
+    dialog->setOption(QFileDialog::DontUseNativeDialog);
+    dialog->setNameFilters({kZoomedPng, kActualPng, kZoomedJpg, kActualJpg});
+    dialog->selectNameFilter(kZoomedPng);
+    dialog->setDefaultSuffix(QStringLiteral("png"));
+    connect(dialog, &QFileDialog::filterSelected, dialog, [dialog](const QString &filter) {
+        dialog->setDefaultSuffix(filter.contains(QLatin1String("JPEG")) ? QStringLiteral("jpg") : QStringLiteral("png"));
     });
-    const bool accepted = dialog.exec() == QDialog::Accepted && !dialog.selectedFiles().isEmpty();
-    if (platform::isX11() && isVisible()) {
-        x11util::activate(windowHandle());
-        x11util::grabKeyboard(windowHandle());
-    }
-    activateWindow();
-    if (!accepted)
-        return;
+    const bool accepted = dialog->exec() == QDialog::Accepted && !dialog->selectedFiles().isEmpty();
+    const QString path = accepted ? dialog->selectedFiles().constFirst() : QString();
+    const bool actual = dialog->selectedNameFilter().startsWith(QLatin1String("Actual"));
+    delete dialog;
+    m_modalOpen = false;
 
-    const QString path = dialog.selectedFiles().constFirst();
-    const bool actual = dialog.selectedNameFilter().startsWith(QLatin1String("Actual"));
-    const QImage image = actual ? renderActual(area) : renderView(area);
+    if (!m_leaveRequested) {
+        if (platform::isX11() && isVisible()) {
+            x11util::activate(windowHandle());
+            x11util::grabKeyboard(windowHandle());
+        }
+        activateWindow();
+    }
+    if (accepted)
+        writeImage(path, actual ? renderActual(area) : renderView(area));
+    if (m_leaveRequested) {
+        m_leaveRequested = false;
+        leave();
+    }
+}
+
+void OverlayWindow::writeImage(const QString &path, const QImage &image)
+{
     const bool jpeg = path.endsWith(QLatin1String(".jpg"), Qt::CaseInsensitive)
                       || path.endsWith(QLatin1String(".jpeg"), Qt::CaseInsensitive);
     if (!image.save(path, jpeg ? "JPG" : "PNG", jpeg ? 92 : -1)) {
@@ -660,8 +681,12 @@ void OverlayWindow::paintEvent(QPaintEvent *)
         painter.save();
         painter.scale(width() / m_view.width(), height() / m_view.height());
         painter.translate(-m_view.topLeft());
-        if (m_drawing)
-            Canvas::paintShape(painter, m_current, img);
+        if (m_drawing) {
+            if (m_current.blurRadius > 0 && m_current.needsPixels())
+                Canvas::paintPreview(painter, m_current);
+            else
+                Canvas::paintShape(painter, m_current, img);
+        }
         if (m_typing) {
             Canvas::paintShape(painter, m_text, img);
             if (m_caretVisible) {
@@ -700,7 +725,19 @@ void OverlayWindow::paintEvent(QPaintEvent *)
 void OverlayWindow::enterEvent(QEnterEvent *event)
 {
     notePointer(event->position());
+    Q_EMIT pointerEntered(this);
     QWidget::enterEvent(event);
+}
+
+void OverlayWindow::closeEvent(QCloseEvent *event)
+{
+    // Closed from outside (Alt+F4, the overview): end the session properly
+    // rather than just hiding, or it would never finish.
+    event->ignore();
+    if (m_cropping && !m_exitAfterCrop)
+        cancelCrop();
+    else
+        leave();
 }
 
 void OverlayWindow::mousePressEvent(QMouseEvent *event)
@@ -850,10 +887,18 @@ void OverlayWindow::keyReleaseEvent(QKeyEvent *event)
 
 std::optional<Action> OverlayWindow::hotkeyFor(QKeyEvent *event) const
 {
-    const QKeyCombination pressed(event->modifiers() & ~Qt::KeypadModifier, Qt::Key(event->key()));
+    const Qt::KeyboardModifiers mods = event->modifiers() & ~Qt::KeypadModifier;
+    const QKeyCombination pressed(mods, Qt::Key(event->key()));
     for (Action action : configurableActions()) {
         for (const QKeySequence &sequence : m_settings->shortcuts(action)) {
-            if (!sequence.isEmpty() && sequence[0] == pressed)
+            if (sequence.isEmpty())
+                continue;
+            if (sequence[0] == pressed)
+                return action;
+            // With Shift held, Qt reports the shifted symbol (Ctrl+Shift+6
+            // arrives as Ctrl+Shift+^), so compare the physical key as well.
+            if (platform::isX11() && sequence[0].keyboardModifiers() == mods
+                && x11util::keycodesFor(keynames::keysym(sequence[0].key())).contains(int(event->nativeScanCode())))
                 return action;
         }
     }

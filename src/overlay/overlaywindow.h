@@ -44,6 +44,7 @@ public:
 
 Q_SIGNALS:
     void pointerSeen(OverlayWindow *window, const QPointF &pos);
+    void pointerEntered(OverlayWindow *window);
     void finished();
     void hotkeyPressed(Action action);
     // `snip` is true for a region picked by a snip hotkey (worth a notification).
@@ -61,6 +62,7 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
     void enterEvent(QEnterEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void hideEvent(QHideEvent *event) override;
     bool focusNextPrevChild(bool) override { return false; }
@@ -100,6 +102,7 @@ private:
     QImage renderActual(const QRectF &area);
     void copyArea(const QRectF &area, bool snip);
     void saveArea(const QRectF &area);
+    void writeImage(const QString &path, const QImage &image);
 
     std::optional<Action> hotkeyFor(QKeyEvent *event) const;
     void showHint(const QString &text);
@@ -112,6 +115,8 @@ private:
     bool m_started = false;
     bool m_pointerKnown = false;
     bool m_leaving = false;
+    bool m_modalOpen = false;       // the save dialog is running its event loop
+    bool m_leaveRequested = false;  // leave() was called meanwhile
     QPointF m_cursor;
 
     // Zoom: the view is the part of the screenshot (in screen coordinates)

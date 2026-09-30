@@ -27,19 +27,27 @@ ScreenCapture::ScreenCapture(Settings *settings, QObject *parent)
         connect(backend, &CaptureBackend::finished, this, [this, backend](const ScreenImages &images) {
             if (!m_busy || m_backends.value(m_current) != backend)
                 return;
-            m_preferred = m_current;
             m_busy = false;
-            qCDebug(lcCapture) << "captured" << images.size() << "screens via" << backend->name();
-            Q_EMIT finished(images);
+            ScreenImages live;
+            for (const ScreenImage &image : images) {
+                if (image.screen)  // a monitor may have been unplugged meanwhile
+                    live << image;
+            }
+            qCDebug(lcCapture) << "captured" << live.size() << "screens via" << backend->name();
+            if (live.isEmpty())
+                Q_EMIT failed(QStringLiteral("the screens changed while capturing"));
+            else
+                Q_EMIT finished(live);
         });
         connect(backend, &CaptureBackend::failed, this, [this, backend](const QString &reason) {
             if (!m_busy || m_backends.value(m_current) != backend)
                 return;
             qCWarning(lcCapture) << backend->name() << "failed:" << reason;
             m_errors << backend->name() + QStringLiteral(": ") + reason;
-            // Walk the chain once, starting at the preferred backend.
-            const int next = (m_current + 1) % m_backends.size();
-            if (next == m_preferred) {
+            // Always walk the chain in order: one cancelled screen-share dialog
+            // must not demote GNOME to the flashing Screenshot portal for good.
+            const int next = m_current + 1;
+            if (next >= m_backends.size()) {
                 m_busy = false;
                 Q_EMIT failed(m_errors.join(QLatin1Char('\n')));
                 return;
@@ -51,17 +59,18 @@ ScreenCapture::ScreenCapture(Settings *settings, QObject *parent)
 
 QString ScreenCapture::backendName() const
 {
-    const CaptureBackend *backend = m_backends.value(m_preferred);
+    const CaptureBackend *backend = m_backends.value(0);
     return backend ? backend->name() : QString();
 }
 
-void ScreenCapture::capture()
+bool ScreenCapture::capture()
 {
     if (m_busy)
-        return;
+        return false;
     m_busy = true;
     m_errors.clear();
-    tryBackend(m_preferred);
+    tryBackend(0);
+    return true;
 }
 
 void ScreenCapture::tryBackend(int index)

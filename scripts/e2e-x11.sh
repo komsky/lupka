@@ -23,7 +23,8 @@ if [[ "${E2E_INNER:-}" != 1 ]]; then
     env -i HOME="$HOME" PATH="$PATH" USER="$USER" LANG=C.UTF-8 \
         DISPLAY="$display" XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" \
         XDG_CACHE_HOME="$work/cache" XDG_RUNTIME_DIR="$work/run" XDG_CURRENT_DESKTOP=X-Test \
-        QT_QPA_PLATFORM=xcb E2E_INNER=1 WORK="$work" \
+        QT_QPA_PLATFORM=xcb QT_LOGGING_RULES="app.*=true" QT_MESSAGE_PATTERN="%{time h:mm:ss.zzz} %{category}: %{message}" \
+        E2E_INNER=1 WORK="$work" \
         dbus-run-session -- "$0" "$bin" ${wm:+--wm "$wm"}
     status=$?
     echo "artifacts: $work"
@@ -313,18 +314,24 @@ else
 fi
 
 # --- DemoType (Ctrl+7) ---------------------------------------------------------
+# Without a window manager nothing activates windows, so focus the dialog by
+# hand and let GTK settle: an entry that gains focus mid-typing selects all
+# and the next key replaces what was typed.
+focus_dialog() {
+    local w
+    w=$(xdotool search --sync --onlyvisible --name '^demo$' 2>/dev/null | head -1)
+    xdotool mousemove --window "$w" 40 40 windowfocus --sync "$w" 2>/dev/null
+    sleep 0.7
+}
 zenity --entry --title demo --text demo >"$WORK/typed1.txt" 2>/dev/null &
-sleep 2
-xdotool search --name demo windowactivate --sync 2>/dev/null
-xdotool mousemove 960 540
+focus_dialog
 xdotool key ctrl+7
 sleep 3
 xdotool key Return
 sleep 1
 [[ "$(cat "$WORK/typed1.txt")" == "Hello, World!" ]] && ok "Ctrl+7 types the first snippet" || bad "typed: '$(cat "$WORK/typed1.txt")'"
 zenity --entry --title demo --text demo >"$WORK/typed2.txt" 2>/dev/null &
-sleep 2
-xdotool search --name demo windowactivate --sync 2>/dev/null
+focus_dialog
 xdotool key ctrl+7
 sleep 3
 xdotool key Return

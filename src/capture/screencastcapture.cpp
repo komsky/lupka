@@ -34,19 +34,19 @@ QList<Grabbed> grabAll(const QList<Grab> &grabs)
 
 // The screen a stream shows: by position when the portal reports it,
 // otherwise by size, otherwise the only screen there is.
-QScreen *screenFor(const CastStream &stream, const QList<QScreen *> &screens, const QList<QScreen *> &taken)
+QScreen *screenFor(const CastStream &stream, const QList<QPointer<QScreen>> &screens, const QList<QScreen *> &taken)
 {
+    auto usable = [&](QScreen *screen) { return screen && !taken.contains(screen); };
     for (QScreen *screen : screens) {
-        if (!taken.contains(screen) && !stream.geometry.isEmpty()
-            && screen->geometry().topLeft() == stream.geometry.topLeft())
+        if (usable(screen) && !stream.geometry.isEmpty() && screen->geometry().topLeft() == stream.geometry.topLeft())
             return screen;
     }
     for (QScreen *screen : screens) {
-        if (!taken.contains(screen) && !stream.geometry.isEmpty() && screen->geometry().size() == stream.geometry.size())
+        if (usable(screen) && !stream.geometry.isEmpty() && screen->geometry().size() == stream.geometry.size())
             return screen;
     }
     for (QScreen *screen : screens) {
-        if (!taken.contains(screen))
+        if (usable(screen))
             return screen;
     }
     return nullptr;
@@ -67,7 +67,9 @@ bool ScreenCastCapture::isUsable()
 
 void ScreenCastCapture::capture(const QList<QScreen *> &screens)
 {
-    m_screens = screens;
+    m_screens.clear();
+    for (QScreen *screen : screens)
+        m_screens << screen;
     delete m_session;
     m_session = new ScreenCastSession(this);
     connect(m_session, &ScreenCastSession::failed, this, [this](const QString &reason) {

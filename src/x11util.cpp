@@ -6,6 +6,7 @@
 #include <QWindow>
 
 #include <xcb/xcb.h>
+#include <xcb/xcb_keysyms.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -89,6 +90,22 @@ void activate(QWindow *window)
                    reinterpret_cast<const char *>(&event));
     xcb_set_input_focus(c, XCB_INPUT_FOCUS_PARENT, id, XCB_CURRENT_TIME);
     xcb_flush(c);
+}
+
+QList<int> keycodesFor(quint32 keysym)
+{
+    QList<int> result;
+    xcb_connection_t *c = connection();
+    if (!c || !keysym)
+        return result;
+    xcb_key_symbols_t *symbols = xcb_key_symbols_alloc(c);
+    if (xcb_keycode_t *codes = xcb_key_symbols_get_keycode(symbols, keysym)) {
+        for (xcb_keycode_t *code = codes; *code; ++code)
+            result << *code;
+        free(codes);
+    }
+    xcb_key_symbols_free(symbols);
+    return result;
 }
 
 }  // namespace x11util

@@ -56,13 +56,13 @@ It copies ZoomIt closely. The hotkeys, the zoom steps and animation, the drawing
 
 ### Ubuntu and Debian
 
-Download the `.deb` from the [latest release](https://github.com/komsky/lupka/releases/latest) and install it:
+The [latest release](https://github.com/komsky/lupka/releases/latest) has two packages: `lupka_<version>_ubuntu24.04_amd64.deb` for Ubuntu 24.04 or newer, and `lupka_<version>_debian13_amd64.deb` for Debian 13 (trixie) or newer. Download the one for your system and install it:
 
 ```sh
-sudo apt install ./lupka_*_amd64.deb
+sudo apt install ./lupka_*_ubuntu24.04_amd64.deb     # or ./lupka_*_debian13_amd64.deb
 ```
 
-The package is for Ubuntu 24.04 or newer and Debian 13 (trixie) or newer. If apt prints a note that the download was "performed unsandboxed as root", that is only because the file sits in your home folder; the install is fine.
+If apt prints a note that the download was "performed unsandboxed as root", that is only because the file sits in your home folder; the install is fine.
 
 ### Build from source
 

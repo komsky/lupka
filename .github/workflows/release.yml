@@ -8,13 +8,15 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  version:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Check the tag against the project version
+        id: check
         run: |
           # The project() call may span several lines.
           version=$(tr '\n' ' ' < CMakeLists.txt | sed -nE 's/.*project\([^)]*[[:space:]]VERSION[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')
@@ -26,7 +28,65 @@ jobs:
             echo "::error::Tag $GITHUB_REF_NAME does not match VERSION $version in CMakeLists.txt"
             exit 1
           fi
-          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  # Ubuntu and Debian name the same Qt libraries differently (Ubuntu adds a
+  # t64 suffix), so each gets its own package, built on the oldest release
+  # it supports.
+  package:
+    needs: version
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu:24.04
+            flavour: ubuntu24.04
+          - image: debian:trixie
+            flavour: debian13
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      DEB: lupka_${{ needs.version.outputs.version }}_${{ matrix.flavour }}_amd64.deb
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates cmake ninja-build g++ pkg-config dpkg-dev file \
+            qt6-base-dev qt6-wayland \
+            libxcb1-dev libxcb-keysyms1-dev libxcb-xtest0-dev libglib2.0-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            fonts-dejavu-core
+
+      - uses: actions/checkout@v7
+
+      - name: Build and test
+        run: |
+          cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-release
+          ctest --test-dir build-release --output-on-failure
+
+      - name: Package
+        working-directory: build-release
+        run: |
+          cpack -G DEB -D CPACK_DEBIAN_FILE_NAME="$DEB"
+          dpkg-deb --info "$DEB"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.flavour }}
+          path: build-release/${{ env.DEB }}
+          if-no-files-found: error
+
+  publish:
+    needs: [version, package]
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
 
       - name: Extract the release notes
         # Everything between "## [X.Y.Z]" and the next "## [", minus the link
@@ -43,32 +103,24 @@ jobs:
             echo "::error::CHANGELOG.md has no section for $VERSION"
             exit 1
           fi
+          cat >> notes.md <<'EOF'
+
+          ### Packages
+
+          - `lupka_*_ubuntu24.04_amd64.deb`: Ubuntu 24.04 and newer
+          - `lupka_*_debian13_amd64.deb`: Debian 13 (trixie) and newer
+
+          Install with `sudo apt install ./lupka_*_amd64.deb` and check the download against `SHA256SUMS`.
+          EOF
           cat notes.md
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            cmake ninja-build g++ pkg-config dpkg-dev \
-            qt6-base-dev qt6-wayland \
-            libxcb1-dev libxcb-keysyms1-dev libxcb-xtest0-dev libglib2.0-dev \
-            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-            fonts-dejavu-core
-
-      - name: Build and test
-        run: |
-          cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-release
-          ctest --test-dir build-release --output-on-failure
-
-      - name: Package
-        run: |
-          (cd build-release && cpack -G DEB)
-          ls -l build-release/lupka_"$VERSION"_*.deb
-          (cd build-release && sha256sum -- *.deb) > SHA256SUMS
-          cat SHA256SUMS
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
 
       - name: Create the GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "Lupka $VERSION" --notes-file notes.md build-release/*.deb SHA256SUMS
+        run: |
+          (cd dist && sha256sum -- *.deb) > SHA256SUMS
+          cat SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --title "Lupka $VERSION" --notes-file notes.md dist/*.deb SHA256SUMS

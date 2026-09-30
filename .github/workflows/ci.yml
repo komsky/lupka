@@ -78,6 +78,34 @@ jobs:
       - name: Unit tests
         run: ctest --test-dir build --output-on-failure
 
+  debian:
+    # Debian names the Qt libraries differently from Ubuntu, so its package
+    # is built and checked separately (see release.yml).
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    timeout-minutes: 30
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates cmake ninja-build g++ pkg-config dpkg-dev file \
+            qt6-base-dev qt6-wayland \
+            libxcb1-dev libxcb-keysyms1-dev libxcb-xtest0-dev libglib2.0-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            fonts-dejavu-core
+
+      - uses: actions/checkout@v7
+
+      - name: Build, test and package
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+          ctest --test-dir build --output-on-failure
+          (cd build && cpack -G DEB && dpkg-deb --info ./*.deb)
+
   e2e-x11:
     runs-on: ubuntu-24.04
     timeout-minutes: 30

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Releases ship a package for Ubuntu (24.04 and newer) and a separate one for Debian (13 and newer). Debian cannot install the Ubuntu package because the two distributions name the Qt libraries differently. The 0.1.0 release has both packages too.
+
 ## [0.1.0] - 2026-09-30
 
 First release.

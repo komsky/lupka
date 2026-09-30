@@ -1,87 +1,75 @@
+<div align="center">
+
+<img src="data/icons/app.svg" width="112" height="112" alt="Lupka icon: a magnifying glass over a red pen stroke">
+
 # Lupka
 
-Zoom, draw and snip on the screen, the ZoomIt way, on Linux.
+**Zoom, draw and snip on your screen. ZoomIt, for Linux.**
 
-Lupka ("magnifying glass" in Polish) copies Sysinternals ZoomIt closely enough that ZoomIt habits carry over. Hotkeys, zoom steps, the zoom animation and the drawing keys all match. It runs on GNOME and KDE Plasma under Wayland, on any X11 desktop, and on wlroots compositors with `grim`.
+[![CI](https://github.com/komsky/lupka/actions/workflows/ci.yml/badge.svg)](https://github.com/komsky/lupka/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/komsky/lupka?label=release&color=e5484d)](https://github.com/komsky/lupka/releases/latest)
+[![Licence: GPL-3.0-or-later](https://img.shields.io/badge/licence-GPL--3.0--or--later-3d7cc9)](LICENSE)
+![GNOME, KDE Plasma, X11](https://img.shields.io/badge/runs%20on-GNOME%20%C2%B7%20KDE%20Plasma%20%C2%B7%20X11-5b5f97)
+![Qt 6](https://img.shields.io/badge/Qt-6-41cd52?logo=qt&logoColor=white)
 
-## What it does
+[Install](#install) · [Keys](#keys) · [Desktop support](#desktop-support) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-| Hotkey | ZoomIt name | What happens |
-|---|---|---|
-| Ctrl+1 | Zoom | Freezes the screen and zooms in 2x around the pointer. Move the mouse to pan, scroll or press Up/Down to change the zoom (1x to 256x). Left-click to start drawing on the frozen image. Esc or right-click leaves. |
-| Ctrl+2 | Draw | Freezes the screen at 1:1 and goes straight into drawing. Press Ctrl+2 again to leave. |
-| Ctrl+Shift+4 | LiveDraw | Draws over the live desktop, without freezing it. |
-| Ctrl+3 | Break | Full-screen countdown timer. Arrow keys or the wheel change the time. |
-| Ctrl+4 | LiveZoom | Toggles the desktop's own magnifier (GNOME or KWin). Ctrl+Up/Down change its zoom while it is on. |
-| Ctrl+5 | Record | Records a whole monitor: the one under the pointer on X11, the one you pick in the share dialog on Wayland (asked once). Press any record hotkey again to stop. |
-| Ctrl+Shift+5 | Record region | Drag a rectangle, then recording starts. |
-| Ctrl+Alt+5 | Record window | Records the window under the pointer. On Wayland you pick the window in the share dialog. |
-| Ctrl+6, Super+Shift+S | Snip | Drag a rectangle; the image goes to the clipboard. |
-| Ctrl+Shift+6 | Snip to file | Same, but asks where to save the image. |
-| Ctrl+7 | DemoType | Types the next snippet of your script into the focused window. Esc stops it. |
-| Ctrl+Shift+7 | DemoType back | Steps back one snippet. |
+<img src="docs/images/demo.gif" width="100%" alt="Lupka zooms into source code with Ctrl+1, follows the mouse, then draws an ellipse, an arrow, a rectangle and text on the frozen screen, zooms back out and snips a window to the clipboard">
 
-You can change or turn off any of these hotkeys in Settings. When a zoom is active, Snip crops what you see at the current magnification.
+</div>
 
-### Drawing keys (inside Zoom, Draw and LiveDraw)
+If you have given a talk or a code review from Windows, you have probably used [ZoomIt](https://learn.microsoft.com/sysinternals/downloads/zoomit): press Ctrl+1, the screen zooms in around the mouse, click and draw an arrow at the line everyone should look at, press Esc and carry on. Lupka ("magnifying glass" in Polish) brings that to the Linux desktop.
 
-| Key | Action |
-|---|---|
-| R G B O Y P W K | Red, green, blue, orange, yellow, pink, white, black pen |
-| Shift + colour | Highlighter in that colour |
-| X / Shift+X | Blur pen / strong blur pen |
-| Shift held as you press the button | Straight line |
-| Ctrl held | Rectangle |
-| Tab held | Ellipse |
-| Ctrl+Shift held | Arrow (the head goes where you started) |
-| Ctrl+wheel, Ctrl+Up/Down | Pen width (2 to 40) |
-| T / Shift+T | Type text, left or right aligned. The wheel or Up/Down changes the font size. Esc ends typing. |
-| E | Erase all drawings |
-| Ctrl+Z | Undo (32 steps) |
-| Ctrl+W / Ctrl+K | Switch to a whiteboard / blackboard |
-| Space | Centre the pointer (X11 only) |
-| Ctrl+C / Ctrl+S | Copy / save the whole view |
-| Ctrl+Shift+C / Ctrl+Shift+S | Drag a rectangle, then copy / save it |
-| Right-click | Leave drawing mode, back to panning |
-| Esc | Close |
+It copies ZoomIt closely. The hotkeys, the zoom steps and animation, the drawing keys and the way the view follows the mouse all come from ZoomIt's own source, so your fingers already know how to use it. It runs on GNOME and KDE Plasma under Wayland, on X11 desktops, and on other Wayland compositors with a little setup.
 
-LiveDraw has the pens, shapes, text, erase and undo, but no highlighter, blur, boards or zoom, and right-click closes it.
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/zoom-draw.png" alt="Zoomed-in code with a red ellipse, a green rectangle, an arrow and the text ZoomIt's formula"></td>
+    <td width="50%"><img src="docs/images/whiteboard.png" alt="A whiteboard sketch with a blue box, a red arrow, a green ellipse and a pink line"></td>
+  </tr>
+  <tr>
+    <td><b>Zoom and annotate.</b> Ctrl+1, then click to freeze the view and draw. Everything stays put when you zoom or pan again.</td>
+    <td><b>Sketch on a whiteboard.</b> Ctrl+2 draws at 1:1; Ctrl+W or Ctrl+K swaps the screen for a white or black board.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/snip.png" alt="The desktop dimmed except for a selected terminal window being snipped"></td>
+    <td><img src="docs/images/break.png" alt="A red five-minute countdown over the faded desktop"></td>
+  </tr>
+  <tr>
+    <td><b>Snip.</b> Super+Shift+S or Ctrl+6 copies a region to the clipboard. Inside a zoom, it copies what you see.</td>
+    <td><b>Take a break.</b> Ctrl+3 puts a countdown on screen, over a colour, the faded desktop or your own picture.</td>
+  </tr>
+</table>
 
-Lupka keeps drawings in screen coordinates, so they stay in place when you zoom or pan afterwards. The save dialog offers the zoomed view or the actual-size region, as PNG or JPEG.
+## What you get
 
-### DemoType
-
-Point Settings → DemoType at a text file in ZoomIt's format. Snippets are separated by `[end]`. Text between `[paste]` and `[/paste]` is pasted instead of typed. Each Ctrl+7 types the next snippet into whatever window has focus. On X11 the keys go through XTest; on Wayland through the RemoteDesktop portal, which asks for permission once. On X11, characters the keyboard layout can't produce are pasted; on Wayland, everything outside plain ASCII is pasted.
-
-### Recording
-
-Recordings go to `~/Videos` (configurable) as MP4 (H.264) when `x264enc` is installed, otherwise WebM (VP8). System audio is recorded from the default output when "Record system sound" is ticked; MP4 files need an AAC encoder for that (`gstreamer1.0-libav`), or they are saved without sound. On Wayland the frames come from the ScreenCast portal, so the desktop shows its screen-sharing indicator while recording.
+- **Zoom** (Ctrl+1) into a frozen copy of the screen, from 2x up to 256x, and pan by moving the mouse.
+- **Draw** on it with eight pen colours, a highlighter, blur, lines, rectangles, ellipses, arrows and text, with 32 steps of undo.
+- **Draw without zooming** (Ctrl+2), or over the live desktop (Ctrl+Shift+4).
+- **Snip** a region to the clipboard (Ctrl+6 or Super+Shift+S) or to a file (Ctrl+Shift+6).
+- **Record** the screen, a region or a window to MP4 or WebM, with system sound (Ctrl+5).
+- **Break timer** (Ctrl+3) and **live zoom** through the desktop's own magnifier (Ctrl+4).
+- **DemoType** (Ctrl+7) types prepared snippets into any window, for live-coding demos without typos.
+- A settings window for every hotkey and option, and a tray icon that shows when you are recording.
 
 ## Install
 
-### Debian and Ubuntu package
+### Ubuntu and Debian
+
+Download the `.deb` from the [latest release](https://github.com/komsky/lupka/releases/latest) and install it:
 
 ```sh
-cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
-ninja -C build-release
-(cd build-release && cpack -G DEB)
-sudo apt install ./build-release/lupka_0.1.0_amd64.deb
+sudo apt install ./lupka_*_amd64.deb
 ```
 
-Start **Lupka** from the application menu once. It sits in the tray, registers its hotkeys and starts at login (turn that off in Settings → General).
+The package is for Ubuntu 24.04 or newer and Debian 13 (trixie) or newer. If apt prints a note that the download was "performed unsandboxed as root", that is only because the file sits in your home folder; the install is fine.
 
-To remove it cleanly, first undo the per-user setup (desktop shortcuts, the login entry and, on KDE, the desktop entry Lupka wrote), then remove the package:
+### Build from source
 
-```sh
-lupka --unregister-shortcuts
-sudo apt remove lupka
-```
+You need CMake, a C++17 compiler, Qt 6.2 or newer, libxcb, GLib and GStreamer.
 
-Settings stay in `~/.config/lupka/` until you delete that folder.
-
-### Build dependencies
-
-Ubuntu 24.04 or newer:
+<details>
+<summary>Ubuntu and Debian packages</summary>
 
 ```sh
 sudo apt install cmake ninja-build g++ pkg-config dpkg-dev \
@@ -90,66 +78,158 @@ sudo apt install cmake ninja-build g++ pkg-config dpkg-dev \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
     gstreamer1.0-pipewire gstreamer1.0-plugins-good
 ```
+</details>
 
-Optional at run time: `gstreamer1.0-plugins-ugly` (H.264 recording), `gstreamer1.0-libav` (sound in MP4 recordings), `gstreamer1.0-x` (X11 recording), `wl-clipboard` (DemoType paste fallback on Wayland), `grim` (capture on wlroots compositors).
+<details>
+<summary>Fedora packages</summary>
 
-Fedora: `qt6-qtbase-devel qt6-qtwayland libxcb-devel xcb-util-keysyms-devel glib2-devel gstreamer1-devel gstreamer1-plugins-base-devel pipewire-gstreamer`.
-
-## Desktop notes
-
-**GNOME (Wayland).** Hotkeys are GNOME custom shortcuts, so they show up under Settings → Keyboard → Custom Shortcuts and GNOME runs `lupka <action>` when you press them. The screen image comes from a ScreenCast portal session. The first zoom asks which screen to share; press Share once and Lupka keeps the permission, so later zooms don't ask. Each capture briefly lights the screen-sharing indicator in the top bar. If the ScreenCast portal isn't available, Lupka falls back to the Screenshot portal, which flashes the screen and plays the shutter sound.
-
-**KDE Plasma (Wayland).** Hotkeys are registered with KDE's global shortcuts and appear in System Settings → Shortcuts → Lupka. Captures use KWin's screenshot interface with no dialog and no flash. KWin only allows this for applications with an installed desktop file, so when no installed desktop file points at the running binary (for example a build run from its source folder), Lupka writes one to `~/.local/share/applications/io.github.komsky.Lupka.desktop` at startup.
-
-**X11.** The screen is read from the X server and nothing asks for permission. GNOME and KDE use their own shortcut services, as under Wayland; on other X11 desktops Lupka grabs the keys itself.
-
-**Other Wayland compositors.** Hotkeys go through the GlobalShortcuts portal where the compositor has one; otherwise bind `lupka zoom`, `lupka draw` and so on to keys in your compositor's config. Captures use `grim` if it is installed, then the Screenshot portal.
-
-## Command line
-
+```sh
+sudo dnf install cmake ninja-build gcc-c++ pkgconf-pkg-config \
+    qt6-qtbase-devel qt6-qtwayland libxcb-devel xcb-util-keysyms-devel \
+    glib2-devel gstreamer1-devel gstreamer1-plugins-base-devel \
+    pipewire-gstreamer gstreamer1-plugins-good
 ```
-lupka                 start in the background, or open Settings if already running
-lupka zoom            same as pressing Ctrl+1 (also draw, livedraw, snip, snip-save,
-                      break, livezoom, record, record-region, record-window,
-                      demotype, demotype-back, settings, quit)
-lupka --background    start without showing anything (what the login entry runs)
-lupka --unregister-shortcuts
-lupka --version
-lupka --help
+</details>
+
+Then build and install:
+
+```sh
+git clone https://github.com/komsky/lupka.git && cd lupka
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+sudo cmake --install build        # or: (cd build && cpack -G DEB) for a .deb
 ```
 
-Settings live in `~/.config/lupka/lupka.ini`.
+Optional, at run time: `gstreamer1.0-plugins-ugly` for H.264 recordings, `gstreamer1.0-libav` for sound in MP4 files, `gstreamer1.0-x` for recording on X11, `wl-clipboard` for DemoType's paste fallback on Wayland, and `grim` for screen capture on wlroots compositors.
+
+### First start
+
+Open **Lupka** from your application menu once. It goes to the tray, registers its hotkeys and starts again when you log in (you can turn that off in Settings → General).
+
+On GNOME Wayland the first Ctrl+1 asks which screen to share. Press Share once; Lupka keeps that permission and later zooms are instant.
+
+### Uninstall
+
+```sh
+lupka --unregister-shortcuts   # removes the hotkeys, the login entry and anything else Lupka wrote
+sudo apt remove lupka
+```
+
+Your settings stay in `~/.config/lupka/` until you delete that folder.
+
+## Keys
+
+### Hotkeys
+
+| Hotkey | What it does |
+|---|---|
+| <kbd>Ctrl</kbd>+<kbd>1</kbd> | Zoom. Moving the mouse pans; scroll or Up/Down change the zoom. Click to draw, Esc or right-click to leave. |
+| <kbd>Ctrl</kbd>+<kbd>2</kbd> | Draw on the frozen screen at 1:1. Press again to leave. |
+| <kbd>Ctrl</kbd>+<kbd>3</kbd> | Break timer. Arrow keys or the wheel change the time. |
+| <kbd>Ctrl</kbd>+<kbd>4</kbd> | Live zoom with the desktop's magnifier; Ctrl+Up/Down zoom while it is on. |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd> | LiveDraw: draw over the live desktop. |
+| <kbd>Ctrl</kbd>+<kbd>5</kbd> | Record a whole monitor. Any record hotkey stops the recording. |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>5</kbd> | Record a region you drag out. |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>5</kbd> | Record a window. |
+| <kbd>Ctrl</kbd>+<kbd>6</kbd> or <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> | Snip a region to the clipboard. |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>6</kbd> | Snip a region to a file. |
+| <kbd>Ctrl</kbd>+<kbd>7</kbd> | DemoType: type the next snippet. Esc stops it. |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>7</kbd> | DemoType: step back one snippet. |
+
+You can change or turn off any of these in Settings. Like ZoomIt, the defaults take Ctrl+1 to Ctrl+7 away from other applications (browser tab switching, for one) while Lupka runs.
+
+### While drawing
+
+| Key | What it does |
+|---|---|
+| <kbd>R</kbd> <kbd>G</kbd> <kbd>B</kbd> <kbd>O</kbd> <kbd>Y</kbd> <kbd>P</kbd> <kbd>W</kbd> <kbd>K</kbd> | Red, green, blue, orange, yellow, pink, white or black pen |
+| <kbd>Shift</kbd> + a colour | Highlighter in that colour |
+| <kbd>X</kbd> / <kbd>Shift</kbd>+<kbd>X</kbd> | Blur / strong blur |
+| hold <kbd>Shift</kbd> as you start to drag | Straight line |
+| hold <kbd>Ctrl</kbd> | Rectangle |
+| hold <kbd>Tab</kbd> | Ellipse |
+| hold <kbd>Ctrl</kbd>+<kbd>Shift</kbd> | Arrow, with the head where you started |
+| <kbd>Ctrl</kbd>+scroll, <kbd>Ctrl</kbd>+<kbd>Up</kbd>/<kbd>Down</kbd> | Pen width |
+| <kbd>T</kbd> / <kbd>Shift</kbd>+<kbd>T</kbd> | Type text, left or right aligned; scroll to resize, Esc to finish |
+| <kbd>E</kbd> | Erase everything |
+| <kbd>Ctrl</kbd>+<kbd>Z</kbd> | Undo |
+| <kbd>Ctrl</kbd>+<kbd>W</kbd> / <kbd>Ctrl</kbd>+<kbd>K</kbd> | Whiteboard / blackboard |
+| <kbd>Space</kbd> | Centre the pointer (X11 only) |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>S</kbd> | Copy / save the view (the save dialog offers zoomed or actual size, PNG or JPEG) |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> | Drag out a region, then copy / save it |
+| right-click | Stop drawing and pan again |
+| <kbd>Esc</kbd> | Close |
+
+LiveDraw has the pens, shapes, text, erase and undo, but no highlighter, blur, boards or zoom, and right-click closes it.
+
+### DemoType
+
+Point Settings → DemoType at a text file in ZoomIt's format: snippets separated by `[end]`, with `[enter]`, `[up]`, `[down]`, `[left]`, `[right]` and `[pause:n]` where you need them, and `[paste]` ... `[/paste]` around text that should be pasted rather than typed. Each Ctrl+7 types the next snippet into the focused window. On Wayland the desktop asks once for permission to type.
+
+### Recording
+
+Recordings go to `~/Videos` (you can change that) as MP4 when an H.264 encoder is installed, otherwise WebM. Tick "Record system sound" to include audio; MP4 files need `gstreamer1.0-libav` for the sound track. On Wayland the desktop asks which screen or window to record and shows its screen-sharing indicator while you record.
+
+## Desktop support
+
+| | GNOME (Wayland) | KDE Plasma (Wayland) | X11 desktops | Sway, Hyprland and other wlroots (untested) |
+|---|:-:|:-:|:-:|:-:|
+| Zoom, draw, snip | Yes | Yes | Yes | Should work, with `grim` |
+| Global hotkeys | Yes | Yes | Yes | Bind `lupka zoom` etc. yourself, or the GlobalShortcuts portal |
+| Recording | Yes | Yes | Yes | Should work, through the ScreenCast portal |
+| Live zoom | Yes | Yes | GNOME and KDE only | No |
+| DemoType | Yes | Yes | Yes | Only where the portal offers RemoteDesktop |
+| Tested by the test suites | GNOME 46 and 50 | Plasma 6.7, one and two monitors, HiDPI | Xvfb, with and without mutter | Not yet |
+
+<details>
+<summary>How Lupka works on each desktop</summary>
+
+**GNOME (Wayland).** The hotkeys are GNOME custom shortcuts, so you will find them in Settings → Keyboard → Custom Shortcuts. The screen image comes from a ScreenCast portal session: the first zoom asks which screen to share, and after that there is no dialog and no flash, only a brief screen-sharing icon in the top bar. Without the ScreenCast portal, Lupka falls back to the Screenshot portal, which flashes and plays the shutter sound.
+
+**KDE Plasma (Wayland).** The hotkeys go through KDE's global shortcuts (System Settings → Shortcuts → Lupka). Captures use KWin's screenshot interface, with no dialog. KWin only allows that for programs with an installed desktop file, so if none points at the running binary (a build run from its source folder, say), Lupka writes one to `~/.local/share/applications/`.
+
+**X11.** The screen is read from the X server and nothing asks for permission. GNOME and KDE still use their own shortcut services; on other X11 desktops Lupka grabs the keys itself.
+
+**Other Wayland compositors.** Hotkeys go through the GlobalShortcuts portal where there is one. Otherwise bind `lupka zoom`, `lupka draw`, `lupka snip` and friends to keys in your compositor's config. Screen capture uses `grim` if it is installed, then the Screenshot portal.
+</details>
+
+## Settings and command line
+
+<img src="docs/images/settings.png" align="right" width="360" alt="The Lupka settings window on the Shortcuts tab">
+
+Open Settings from the tray icon or with `lupka settings`. Everything is stored in `~/.config/lupka/lupka.ini`.
+
+Every hotkey is also a command, which is handy for scripts and for compositors without a shortcut service:
+
+```
+lupka zoom | draw | livedraw | snip | snip-save
+lupka break | livezoom
+lupka record | record-region | record-window
+lupka demotype | demotype-back
+lupka settings | quit
+lupka --background | --unregister-shortcuts | --version | --help
+```
+
+<br clear="right">
 
 ## Differences from ZoomIt
 
-Not implemented: panorama screenshots, DemoMirror, webcam overlay, the recording trim editor, and DemoType's "user-driven" mode (where each key you press types the next character). OCR snip is not there either.
+Not there yet: panorama screenshots, DemoMirror, the webcam overlay, the recording trim editor, DemoType's user-driven mode (where each key you press types the next character of the snippet) and OCR snip. Pull requests for any of these are welcome.
 
-Deliberate changes: Ctrl+2 closes the draw overlay when pressed again. Super+Shift+S is bound to Snip by default, as the Windows screenshot shortcut. On GNOME Wayland the first capture needs the share dialog described above, and the pointer can't be moved by the app, so Space (centre pointer) only works on X11.
+A few things differ on purpose. Ctrl+2 closes the draw overlay when you press it again. Super+Shift+S is bound to Snip by default, as it is on Windows. On Wayland an application cannot move the pointer, so Space (centre the pointer) only works on X11.
 
-## Development
+## Contributing
 
-```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
-ninja -C build
-ctest --test-dir build                 # unit tests
-scripts/e2e-x11.sh                     # Xvfb, drives the app with xdotool
-scripts/e2e-x11.sh build/lupka --wm mutter
-scripts/e2e-gnome-wayland.sh           # nested gnome-shell (host GNOME) in Xvfb
-```
+Bug reports, testing on desktops we have not covered, and pull requests are all very welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to build Lupka, run the unit tests and the end-to-end suites (X11 in Xvfb, nested GNOME, and KDE Plasma and GNOME 50 in containers), and what a good pull request looks like. For questions and ideas, use [Discussions](https://github.com/komsky/lupka/discussions). Security problems go through the private process in [SECURITY.md](SECURITY.md).
 
-The end-to-end scripts never touch the running desktop: each one uses its own X server, D-Bus session and config directory, and checks the result by comparing screenshots.
+Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-KDE Plasma 6 and GNOME 50 run in Fedora containers (podman, rootless):
+## Acknowledgements
 
-```sh
-podman build -t lupka-kde -f scripts/containers/kde.Containerfile scripts/containers
-KDE_MODE=single scripts/e2e-kde-wayland.sh     # also: dual, hidpi
-podman build -t lupka-gnome -f scripts/containers/gnome.Containerfile scripts/containers
-scripts/e2e-gnome50.sh
-```
+ZoomIt is a [Sysinternals](https://learn.microsoft.com/sysinternals/) tool by Mark Russinovich, and its source code is published under the MIT licence as part of [Microsoft PowerToys](https://github.com/microsoft/PowerToys). Lupka is a separate, independent project: it reimplements ZoomIt's behaviour for Linux, using that source as a reference, and is not affiliated with or endorsed by Microsoft.
 
-`docs/research/` has the survey of existing Linux tools, the ZoomIt behaviour reference (taken from the PowerToys source), the platform API notes and the naming shortlist.
+The research that shaped Lupka, including a survey of existing Linux tools, is in [`docs/research/`](docs/research/).
 
 ## Licence
 
-MIT. See `LICENSE`.
+Lupka is free software, released under the [GNU General Public License v3.0 or later](LICENSE).

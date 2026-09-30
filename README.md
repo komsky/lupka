@@ -111,7 +111,7 @@ On GNOME Wayland the first Ctrl+1 asks which screen to share. Press Share once; 
 ### Uninstall
 
 ```sh
-lupka --unregister-shortcuts   # removes the hotkeys, the login entry and anything else Lupka wrote
+lupka --unregister-shortcuts   # hotkeys, login entry and other files Lupka wrote
 sudo apt remove lupka
 ```
 

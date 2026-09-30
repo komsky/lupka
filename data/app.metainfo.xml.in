@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Komsky -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
 <component type="desktop-application">
   <id>@APP_ID@</id>
   <name>@APP_NAME@</name>
@@ -7,7 +9,7 @@
     <name>Komsky</name>
   </developer>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <description>
     <p>
       @APP_NAME@ is a screen zoom and annotation tool for presentations, teaching and
@@ -25,12 +27,53 @@
     <p>Works on GNOME and KDE Plasma, under Wayland and X11.</p>
   </description>
   <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <provides>
+    <binary>@APP_BIN@</binary>
+  </provides>
+  <url type="homepage">@APP_HOMEPAGE@</url>
+  <url type="bugtracker">@APP_HOMEPAGE@/issues</url>
+  <url type="vcs-browser">@APP_HOMEPAGE@</url>
+  <url type="contribute">@APP_HOMEPAGE@/blob/master/CONTRIBUTING.md</url>
+  <url type="help">@APP_HOMEPAGE@#keys</url>
   <categories>
     <category>Utility</category>
     <category>Graphics</category>
   </categories>
+  <keywords>
+    <keyword>zoom</keyword>
+    <keyword>magnifier</keyword>
+    <keyword>annotate</keyword>
+    <keyword>draw on screen</keyword>
+    <keyword>presentation</keyword>
+    <keyword>screenshot</keyword>
+    <keyword>screen recorder</keyword>
+    <keyword>ZoomIt</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Zoom in and annotate a frozen screen</caption>
+      <image>https://raw.githubusercontent.com/komsky/lupka/master/docs/images/zoom-draw.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Sketch on a whiteboard</caption>
+      <image>https://raw.githubusercontent.com/komsky/lupka/master/docs/images/whiteboard.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Snip a region to the clipboard</caption>
+      <image>https://raw.githubusercontent.com/komsky/lupka/master/docs/images/snip.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Break timer over the faded desktop</caption>
+      <image>https://raw.githubusercontent.com/komsky/lupka/master/docs/images/break.png</image>
+    </screenshot>
+  </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
-    <release version="@PROJECT_VERSION@" date="2026-09-30"/>
+    <release version="0.1.0" date="2026-09-30">
+      <url type="details">@APP_HOMEPAGE@/releases/tag/v0.1.0</url>
+      <description>
+        <p>First release: zoom, draw, snip, break timer, live zoom, screen recording and DemoType on GNOME, KDE Plasma and X11.</p>
+      </description>
+    </release>
   </releases>
 </component>

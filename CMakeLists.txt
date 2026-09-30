@@ -1,13 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 cmake_minimum_required(VERSION 3.16)
 
-project(lupka VERSION 0.1.0 LANGUAGES CXX)
+project(lupka
+    VERSION 0.1.0
+    DESCRIPTION "Zoom, draw and snip on the screen, the ZoomIt way"
+    HOMEPAGE_URL "https://github.com/komsky/lupka"
+    LANGUAGES CXX)
 
 # The product name lives here and nowhere else. Source code only uses the
 # APP_* macros from config.h.
 set(APP_NAME "Lupka")
 set(APP_BIN "lupka")
 set(APP_ID "io.github.komsky.Lupka")
-set(APP_SUMMARY "Zoom, draw and snip on the screen, the ZoomIt way")
+set(APP_SUMMARY ${PROJECT_DESCRIPTION})
+set(APP_HOMEPAGE ${PROJECT_HOMEPAGE_URL})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -98,7 +106,7 @@ foreach(size 32 48 64 128 256)
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps
             RENAME ${APP_ID}.png)
 endforeach()
-install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/${APP_BIN} RENAME copyright)
+install(FILES packaging/copyright DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/${APP_BIN})
 install(FILES README.md DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/${APP_BIN})
 
 # Debian package: cpack -G DEB
@@ -110,6 +118,7 @@ set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_STRIP_FILES ON)
 set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${PROJECT_HOMEPAGE_URL})
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "qt6-wayland, gstreamer1.0-pipewire, gstreamer1.0-plugins-good")
 # x264 for MP4 recordings, ximagesrc for recording under X11, AAC for sound.

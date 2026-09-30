@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Komsky
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Test helper: save KWin's whole workspace to a PNG through
 // org.kde.KWin.ScreenShot2 (run KWin with KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1).
 #include <QCoreApplication>

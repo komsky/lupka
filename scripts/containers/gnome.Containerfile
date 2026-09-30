@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Test environment: GNOME 50 (the Ubuntu 26.04 generation) on Fedora, with
 # gnome-shell's devkit viewer shown in Xvfb.
 FROM registry.fedoraproject.org/fedora:44

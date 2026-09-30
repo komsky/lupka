@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # End-to-end test under GNOME 50 (the Ubuntu 26.04 generation) in a Fedora
 # container: gnome-shell --devkit shown in Xvfb, input through Mutter's
 # RemoteDesktop API (scripts/containers/rdinput.py).

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Test environment: KDE Plasma 6 (KWin Wayland) on Fedora, run nested in Xvfb.
 FROM registry.fedoraproject.org/fedora:44
 RUN dnf -y install --setopt=install_weak_deps=False \

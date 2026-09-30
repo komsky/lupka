@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Komsky
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 
 #define APP_NAME "@APP_NAME@"
@@ -5,3 +8,4 @@
 #define APP_ID "@APP_ID@"
 #define APP_VERSION "@PROJECT_VERSION@"
 #define APP_SUMMARY "@APP_SUMMARY@"
+#define APP_HOMEPAGE "@APP_HOMEPAGE@"

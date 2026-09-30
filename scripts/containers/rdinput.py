@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Inject input into a GNOME (mutter) session through org.gnome.Mutter.RemoteDesktop.
 
 Test helper for headless/devkit GNOME, where no real input device exists.

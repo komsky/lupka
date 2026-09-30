@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # Start a nested GNOME Shell (Wayland) inside Xvfb with its own D-Bus session,
 # dconf, portals and media-keys daemon, and keep it running. Writes the
 # environment to $WORK/env so commands can be run inside it:

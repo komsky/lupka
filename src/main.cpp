@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Komsky
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "actions.h"
 #include "app.h"
 #include "config.h"
@@ -76,7 +79,7 @@ int main(int argc, char *argv[])
             return 0;
         }
         if (arg == QLatin1String("--version") || arg == QLatin1String("-v")) {
-            std::printf("%s %s\n", APP_BIN, APP_VERSION);
+            std::printf("%s %s\n%s\n", APP_BIN, APP_VERSION, APP_HOMEPAGE);
             return 0;
         }
         if (arg == QLatin1String("--background") || arg == QLatin1String("--daemon")) {

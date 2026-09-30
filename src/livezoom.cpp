@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Komsky
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma push_macro("signals")
 #undef signals
 #include <gio/gio.h>

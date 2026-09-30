@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # End-to-end test on a virtual X server (Xvfb) with its own D-Bus session and
 # config directories, so it never touches the real desktop or its settings.
 #

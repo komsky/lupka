@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # End-to-end test under a nested GNOME Shell running as a Wayland compositor
 # inside Xvfb, with its own D-Bus session, dconf, portals and media-keys
 # daemon. Nothing touches the real desktop.

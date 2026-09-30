@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Komsky
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # End-to-end test under KDE Plasma 6's KWin (Wayland), nested in Xvfb, inside
 # a Fedora container (scripts/containers/kde.Containerfile). Builds the app in
 # the container, so it also checks that the code builds against current Qt.

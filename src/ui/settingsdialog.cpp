@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Komsky
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "settingsdialog.h"
 
 #include "app.h"
@@ -96,8 +99,8 @@ QWidget *SettingsDialog::buildShortcutsTab()
     layout->addLayout(grid);
     layout->addWidget(reset, 0, Qt::AlignLeft);
     layout->addWidget(m_status);
-    layout->addWidget(note(tr("Command line: <tt>%1 zoom</tt>, <tt>draw</tt>, <tt>snip</tt>, <tt>snip-save</tt>, "
-                              "<tt>break</tt>, <tt>livezoom</tt>. Bind these in your compositor if it has no "
+    layout->addWidget(note(tr("Command line: <tt>%1 zoom</tt>, <tt>draw</tt>, <tt>snip</tt>, <tt>record</tt> and the "
+                              "rest listed by <tt>%1 --help</tt>. Bind these in your compositor if it has no "
                               "global shortcut service.")
                                .arg(QStringLiteral(APP_BIN))));
     layout->addStretch();
@@ -472,10 +475,10 @@ QWidget *SettingsDialog::buildGeneralTab()
     form->addRow(QString(), tray);
 
     form->addRow(note(tr("<b>%1 %2</b><br>Session: %3, %4<br>Screen capture: %5<br>Shortcuts: %6<br>"
-                         "Settings file: %7")
+                         "Settings file: %7<br><a href=\"%8\">Project page</a> (help, bug reports, source code)")
                           .arg(QStringLiteral(APP_NAME), QStringLiteral(APP_VERSION), platform::desktopName(),
                                platform::isWayland() ? QStringLiteral("Wayland") : QStringLiteral("X11"),
                                m_app->captureBackend(), m_app->hotkeyBackend(),
-                               s->fileName().toHtmlEscaped())));
+                               s->fileName().toHtmlEscaped(), QStringLiteral(APP_HOMEPAGE))));
     return page;
 }

@@ -16,7 +16,7 @@ if [[ "${E2E_INNER:-}" != 1 ]]; then
     # KWin only takes screenshots with OpenGL compositing, which needs a GPU.
     gpu=()
     [[ -e /dev/dri/renderD128 ]] && gpu=(--device /dev/dri)
-    exec podman run --rm "${gpu[@]}" -e E2E_INNER=1 -v "$root:/src:ro,z" -v "$build:/build:z" --tmpfs /tmp:exec \
+    exec podman run --rm "${gpu[@]}" -e E2E_INNER=1 -e KDE_MODE="${KDE_MODE:-single}" -v "$root:/src:ro,z" -v "$build:/build:z" --tmpfs /tmp:exec \
         lupka-kde /src/scripts/e2e-kde-wayland.sh
 fi
 
@@ -79,7 +79,13 @@ mkdir -p "$XDG_CONFIG_HOME"
 printf '[Xwayland]\nXwaylandEisNoPrompt=true\n' >"$XDG_CONFIG_HOME/kwinrc"
 
 export WAYLAND_DISPLAY=wayland-0
-KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1 kwin_wayland --virtual --width 1920 --height 1080 --no-lockscreen \
+# KDE_MODE: single (one 1920x1080 output), dual (two, side by side), hidpi (scale 2)
+case "${KDE_MODE:-single}" in
+    dual) outputs=(--output-count 2 --width 1920 --height 1080) ;;
+    hidpi) outputs=(--width 1920 --height 1080 --scale 2) ;;
+    *) outputs=(--width 1920 --height 1080) ;;
+esac
+KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1 kwin_wayland --virtual "${outputs[@]}" --no-lockscreen \
     --xwayland >$WORK/kwin.log 2>&1 &
 wait_for 30 test -S $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY || { echo "kwin did not start"; tail -20 $WORK/kwin.log; exit 1; }
 wait_for 10 test -S /tmp/.X11-unix/X0
@@ -87,6 +93,10 @@ sleep 2
 /usr/libexec/xdg-desktop-portal-kde >$WORK/xdp-kde.log 2>&1 &
 sleep 1
 /usr/libexec/xdg-desktop-portal -r >$WORK/xdp.log 2>&1 &
+
+if [[ "${KDE_MODE:-single}" != single ]]; then
+    exec /src/scripts/e2e-kde-modes.sh
+fi
 
 # A fullscreen picture stands in for the desktop.
 QT_QPA_PLATFORM=wayland imv -f -s full "$pattern" >$WORK/imv.log 2>&1 &

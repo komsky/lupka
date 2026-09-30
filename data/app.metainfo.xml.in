@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+  <name>@APP_NAME@</name>
+  <summary>@APP_SUMMARY@</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>
+      @APP_NAME@ is a screen zoom and annotation tool for presentations, teaching and
+      screen sharing, modelled on Sysinternals ZoomIt.
+    </p>
+    <ul>
+      <li>Ctrl+1 zooms into the screen; move the mouse to pan, scroll to change magnification</li>
+      <li>Click while zoomed to freeze and draw: pen, highlighter, lines, arrows, rectangles, ellipses, text and blur</li>
+      <li>Ctrl+2 draws on the screen without zooming, with whiteboard and blackboard modes</li>
+      <li>Super+Shift+S or Ctrl+6 copies a region of the screen to the clipboard</li>
+      <li>Ctrl+3 shows a break timer, Ctrl+4 toggles the desktop's live magnifier</li>
+    </ul>
+    <p>Works on GNOME and KDE Plasma, under Wayland and X11.</p>
+  </description>
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <categories>
+    <category>Utility</category>
+    <category>Graphics</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@PROJECT_VERSION@" date="2026-09-30"/>
+  </releases>
+</component>

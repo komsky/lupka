@@ -1,0 +1,7 @@
+#pragma once
+
+#define APP_NAME "@APP_NAME@"
+#define APP_BIN "@APP_BIN@"
+#define APP_ID "@APP_ID@"
+#define APP_VERSION "@PROJECT_VERSION@"
+#define APP_SUMMARY "@APP_SUMMARY@"

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Releases ship a package for Ubuntu (24.04 and newer) and a separate one for Debian (13 and newer). Debian cannot install the Ubuntu package because the two distributions name the Qt libraries differently. The 0.1.0 release has both packages too.
 
+### Fixed
+
+- On X11 with Qt older than 6.5.1 (Ubuntu 24.04 has 6.4), the mouse wheel could stop working in a running Lupka after the mouse reconnected, sometimes only after several reconnects (a wireless receiver waking from suspend, for example). Zoom, pen width and text size ignored the wheel until Lupka was restarted. On those Qt versions Lupka now reads the mouse through the core X11 protocol (`QT_XCB_NO_XI2=1`), which a reconnect cannot break. This works around Qt bug [QTBUG-99331](https://bugreports.qt.io/browse/QTBUG-99331).
+
 ## [0.1.0] - 2026-09-30
 
 First release.

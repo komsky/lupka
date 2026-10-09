@@ -5,6 +5,7 @@
 
 #include <QGuiApplication>
 #include <QStandardPaths>
+#include <QVersionNumber>
 
 namespace platform {
 
@@ -53,6 +54,22 @@ void prepareEnvironment()
     // if the Wayland plugin is missing.
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM") && !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY"))
         qputenv("QT_QPA_PLATFORM", "wayland;xcb");
+
+    // Older Qt keeps stale XInput2 devices around after a mouse reconnects (a
+    // wireless receiver waking up, resume, a KVM switch) and from then on drops
+    // its wheel events, so zoom, pen width and text size stop answering. The
+    // daemon runs for days, so take the mouse from the core protocol instead:
+    // the wheel arrives as buttons 4 and 5 whatever was plugged in meanwhile.
+    // This costs smooth touchpad scrolling in the settings window; we use no
+    // tablet or touch events. Drop it once the minimum Qt is 6.5.1 (QTBUG-99331).
+    if (qtDropsWheelAfterHotplug(QVersionNumber::fromString(QLatin1String(qVersion())))
+        && !qEnvironmentVariableIsSet("QT_XCB_NO_XI2"))
+        qputenv("QT_XCB_NO_XI2", "1");
+}
+
+bool qtDropsWheelAfterHotplug(const QVersionNumber &qtVersion)
+{
+    return qtVersion < QVersionNumber(6, 5, 1);
 }
 
 bool hasProgram(const QString &name)

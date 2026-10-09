@@ -63,7 +63,7 @@ Quit an installed or older Lupka first (`lupka quit`). While one is running, `bu
 ctest --test-dir build --output-on-failure
 ```
 
-The unit tests use Qt Test with `QT_QPA_PLATFORM=offscreen`, so they need no display. They cover the pure logic: zoom maths, key names, annotations, settings, the capture fallback chain, the break timer and the DemoType script parser. To add one, create `tests/test_<name>.cpp` and add `<name>` to the list at the top of `tests/CMakeLists.txt`.
+The unit tests use Qt Test with `QT_QPA_PLATFORM=offscreen`, so they need no display. They cover the pure logic: zoom maths, key names, annotations, settings, the capture fallback chain, the break timer, the DemoType script parser and the Qt version check for the X11 wheel workaround. To add one, create `tests/test_<name>.cpp` and add `<name>` to the list at the top of `tests/CMakeLists.txt`.
 
 ## End-to-end tests
 

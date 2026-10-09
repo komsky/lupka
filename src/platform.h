@@ -5,6 +5,8 @@
 
 #include <QString>
 
+class QVersionNumber;
+
 namespace platform {
 
 enum class Desktop { Gnome, Kde, Other };
@@ -19,6 +21,10 @@ bool isX11();
 
 // Environment tweaks that must happen before QApplication is created.
 void prepareEnvironment();
+
+// Does this Qt lose the mouse wheel under X11 once a mouse is unplugged and
+// plugged back in (QTBUG-99331, fixed in 6.5.1)?
+bool qtDropsWheelAfterHotplug(const QVersionNumber &qtVersion);
 
 // Is an executable available on PATH?
 bool hasProgram(const QString &name);

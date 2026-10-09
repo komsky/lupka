@@ -143,7 +143,11 @@ bool App::start(const QString &initialAction)
 
     qCInfo(lcApp).noquote() << APP_NAME << APP_VERSION << "on" << platform::desktopName()
                             << (platform::isWayland() ? "Wayland" : "X11") << "| capture:" << captureBackend()
-                            << "| hotkeys:" << hotkeyBackend();
+                            << "| hotkeys:"
+                            << hotkeyBackend()
+                                   + (platform::isX11() && qEnvironmentVariableIsSet("QT_XCB_NO_XI2")
+                                          ? QStringLiteral(" | XInput2 off")
+                                          : QString());
 
     if (m_settings->firstRun()) {
         m_settings->setFirstRunDone();
